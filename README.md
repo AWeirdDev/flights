@@ -5,20 +5,20 @@
 The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python. Based on Baes64-encoded Protobuf string.
 
 ```haskell
-$ pip install flights
+$ pip install fast-flights
 ```
 
 </div>
 
 ## Usage
 
-To use `flights`, you'll first create a filter (inherited from `?tfs=`) to perform a request.
+To use `fast-flights`, you'll first create a filter (inherited from `?tfs=`) to perform a request.
 Then, add `flight_data`, `trip`, `seat` and `passengers` info to use the API directly.
 
 Honorable mention: I like birds. Yes, I like birds.
 
 ```python
-from flights import FlightData, Passengers, create_filter, get_flights
+from fast_flights import FlightData, Passengers, create_filter, get_flights
 
 # Create a new filter
 filter = create_filter(

@@ -3,7 +3,7 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "flights"
+name = "fast-flights"
 version = "0.1"
 description = "The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python."
 keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport"]
@@ -30,5 +30,5 @@ dependencies = [
 
 [tool.setuptools]
 packages = [
-    "flights"
+    "fast_flights"
 ]
