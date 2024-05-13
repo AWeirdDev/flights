@@ -62,8 +62,12 @@ class Passengers:
         infants_in_seat: int = 0,
         infants_on_lap: int = 0,
     ):
-        assert sum((adults, children, infants_in_seat, infants_on_lap)) <= 9, "Too many passengers (> 9)"
-        assert infants_on_lap <= adults, "You must have at least one adult per infant on lap"
+        assert (
+            sum((adults, children, infants_in_seat, infants_on_lap)) <= 9
+        ), "Too many passengers (> 9)"
+        assert (
+            infants_on_lap <= adults
+        ), "You must have at least one adult per infant on lap"
 
         self.pb = []
         self.pb += [PB.Passenger.ADULT for _ in range(adults)]

@@ -17,4 +17,6 @@ def create_filter(
         passengers (Passengers): Passengers.
         seat ("economy" | "premium-economy" | "business" | "first"): Seat.
     """
-    return TFSData.from_interface(flight_data=flight_data, trip=trip, passengers=passengers, seat=seat)
+    return TFSData.from_interface(
+        flight_data=flight_data, trip=trip, passengers=passengers, seat=seat
+    )
