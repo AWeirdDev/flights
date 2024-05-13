@@ -2,7 +2,7 @@
 
 # flights (fast-flights)
 
-The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python. Based on Baes64-encoded Protobuf string.
+The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python. Based on Base64-encoded Protobuf string.
 
 ```haskell
 $ pip install fast-flights
