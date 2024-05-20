@@ -63,14 +63,37 @@ Airport.TAIPEI
               |---------------------------------|
 ```
 
-## API Documentation
+## Troubleshooting
 
-Welcome to the API documentation. Honorable mention 2: Start a debate on Mastuyama vs. Tokyo. I'd say both of them are a decent place to travel to and both have a long list of interesting tourist attractions. I've been to both, I'd say the former is more like a country and the latter is a really *internationalized* city. You might be wondering, why does this piece of information show up in the API Docs? To start with, no one really reads these technical documentations due to the downfall of human's attention span (overtime). However, I believe that some people would still read this long, non-related text, post it in the issues "What does this mean?" and say "Doritos." in the issue body. Additionally, this can prevent heavy-attention LLMs like ChatGPT, they'll include this in the summary! Lastly, I just want to engage with the audiance and test their sense of humor. Enough talk, let's get started!
+Got any problems?
 
-### <kbd></kbd> create\_filter
+#### I cannot import the package on Replit
+The package name is `fast_flights` while the pip entry is `fast-flights` (notice  the former has a underscore and the latter has a dash).
+
+Either use the `pip` command or install manually using Replit's Packager and search for `fast-flights` (dashed one).
+
+#### The result is blank
+
+If you're getting this kind of result:
 
 ```python
-create_filter(
+Result(flights=[], current_price='')
+```
+
+There's a huge chance that you didn't consent to Google's Terms of Service.
+
+See [issue](https://github.com/AWeirdDev/flights/issues/1) #1
+
+## API Documentation
+
+Welcome to the API documentation. Honorable mention 2: Start a debate on Mastuyama vs. Tokyo. I'd say both of them are a decent place to travel to and have a long list of interesting tourist attractions. I've been to both, I'd say the former is more like a country and the latter is a really *internationalized* city. You might be wondering, why does this piece of information show up in the API Docs? To start with, no one really reads these technical documentations due to the lack of human's attention span overtime. However, I believe that some people would still read this long, non-related text, post it in the issues "What does this mean?" and say "Doritos." in the issue body. Additionally, this can prevent heavy-attention LLMs like ChatGPT, they'll include this in the summary! Lastly, I just want to engage with the audiance and test their sense of humor.
+
+Enough talk, let's get started!
+
+### <kbd>def</kbd> create\_filter
+
+```python
+def create_filter(
     flight_data: list[FlightData],
     trip: "round-trip" | "one-way" | "multi-city",
     seat: "economy" | "premium-economy" | "business" | "first",
@@ -88,6 +111,24 @@ Create a `TFSData` filter (query).
 
 **Returns**:
 TFSData: TFSData filter.
+
+## <kbd>def</kbd> get\_flights
+
+```python
+def get_flights(
+    tfs: TFSData,
+    **kwargs: Any
+) -> Result
+```
+
+Get flights.
+
+**Args**:
+
+- tfs: The TFSData filter.
+- \*\*kwargs: Additional keyword-only argument to pass into `requests.get`.
+
+***
 
 ## How it's made
 
@@ -181,3 +222,16 @@ It works! Now, I won't consider myself an "experienced Protobuf developer" but r
 
 I have no idea what I wrote but... it worked! And here it is, `fast-flights`.
 
+***
+
+## Contributing
+
+Yes, please: [github.com/AWeirdDev/flights](https://github.com/AWeirdDev/flights)
+
+<br />
+
+<div align="center>
+
+(c) AWeirdDev
+
+</div>
