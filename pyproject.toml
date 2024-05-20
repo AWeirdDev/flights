@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "fast-flights"
-version = "0.2"
+version = "0.3"
 description = "The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python."
 keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport"]
 authors = [
@@ -25,8 +25,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/AWeirdScratcher/flights"
-"Bug Tracker" = "https://github.com/AWeirdScratcher/flights/issues"
+"Homepage" = "https://github.com/AWeirdDev/flights"
+"Bug Tracker" = "https://github.com/AWeirdDev/flights/issues"
 
 [tool.setuptools]
 packages = [
