@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 import requests
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
@@ -12,7 +12,7 @@ ua = (
 )
 
 
-def request_flights(tfs: TFSData) -> requests.Response:
+def request_flights(tfs: TFSData, **kwargs: Any) -> requests.Response:
     r = requests.get(
         "https://www.google.com/travel/flights",
         params={
@@ -21,6 +21,7 @@ def request_flights(tfs: TFSData) -> requests.Response:
             "tfu": "EgQIABABIgA",  # show all flights and prices condition
         },
         headers={"user-agent": ua, "accept-language": "en"},
+        **kwargs
     )
     r.raise_for_status()
     return r
@@ -87,8 +88,8 @@ def parse_response(r: requests.Response) -> Result:
     return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
 
 
-def get_flights(tfs: TFSData) -> Result:
-    rs = request_flights(tfs)
+def get_flights(tfs: TFSData, **kwargs: Any) -> Result:
+    rs = request_flights(tfs, **kwargs)
     results = parse_response(rs)
 
     return results
