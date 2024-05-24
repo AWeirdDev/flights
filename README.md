@@ -63,16 +63,18 @@ Airport.TAIPEI
               |---------------------------------|
 ```
 
+***
+
 ## Troubleshooting
 
 Got any problems?
 
 #### I cannot import the package on Replit
-The package name is `fast_flights` while the pip entry is `fast-flights` (notice  the former has a underscore and the latter has a dash).
+The package name is `fast_flights` while the pip entry is `fast-flights` (notice  the former has an underscore and the latter has a dash).
 
 Either use the `pip` command or install manually using Replit's Packager and search for `fast-flights` (dashed one).
 
-#### The result is blank
+#### No results???
 
 If you're getting this kind of result:
 
@@ -82,7 +84,17 @@ Result(flights=[], current_price='')
 
 There's a huge chance that you didn't consent to Google's Terms of Service.
 
+An easy fix:
+```python
+cookies = { "CONSENT": "YES+" }
+
+# tag: v0.3
+get_flights(filter, cookies=cookies)
+```
+
 See [issue](https://github.com/AWeirdDev/flights/issues/1) #1
+
+***
 
 ## API Documentation
 
