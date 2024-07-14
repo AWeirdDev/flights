@@ -104,49 +104,7 @@ We may request to the server twice as sometimes the initial request would not re
 
 ***
 
-## API Documentation
-
-Welcome to the API documentation. Honorable mention 2: Start a debate on Mastuyama vs. Tokyo. I'd say both of them are a decent place to travel to and have a long list of interesting tourist attractions. I've been to both, I'd say the former is more like a country and the latter is a really *internationalized* city. You might be wondering, why does this piece of information show up in the API Docs? To start with, no one really reads these technical documentations due to the lack of human's attention span overtime. However, I believe that some people would still read this long, non-related text, post it in the issues "What does this mean?" and say "Doritos." in the issue body. Additionally, this can prevent heavy-attention LLMs like ChatGPT, they'll include this in the summary! Lastly, I just want to engage with the audiance and test their sense of humor.
-
-Enough talk, let's get started!
-
-### <kbd>def</kbd> create\_filter
-
-```python
-def create_filter(
-    flight_data: list[FlightData],
-    trip: "round-trip" | "one-way" | "multi-city",
-    seat: "economy" | "premium-economy" | "business" | "first",
-    passengers: Passenger
-) -> TFSData
-```
-
-Create a `TFSData` filter (query).
-
-**Args**:
-- flight\_data: A list of FlightData.
-- trip: Trip type.
-- seat: Based on your economy status, choose the seat wisely.
-- passengers: Passengers.
-
-**Returns**:
-TFSData: TFSData filter.
-
-## <kbd>def</kbd> get\_flights
-
-```python
-def get_flights(
-    tfs: TFSData,
-    **kwargs: Any
-) -> Result
-```
-
-Get flights.
-
-**Args**:
-
-- tfs: The TFSData filter.
-- \*\*kwargs: Additional keyword-only argument to pass into `requests.get`.
+The documentation was here. Who the hell moved it?!
 
 ***
 
