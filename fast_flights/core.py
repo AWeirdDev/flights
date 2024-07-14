@@ -133,7 +133,7 @@ def get_flights(
         raise RuntimeError(
             "No flights found. (preflight checked)\n"
             "Possible reasons:\n"
-            "- Invalid query (e.g., date is in the past)\n"
+            "- Invalid query (e.g., date is in the past or cannot be booked)\n"
             "- Invalid airport"
         )
 
