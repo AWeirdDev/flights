@@ -1,3 +1,6 @@
+> v1.0 is now available. [Read on ›](https://github.com/AWeirdDev/flights/wiki/What's-New)
+
+<br /><br />
 <div align="center">
 
 # flights (fast-flights)
