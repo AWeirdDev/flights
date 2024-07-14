@@ -10,7 +10,7 @@ $ pip install fast-flights
 
 </div>
 
-## Usage
+## Basic
 
 To use `fast-flights`, you'll first create a filter (inherited from `?tfs=`) to perform a request.
 Then, add `flight_data`, `trip`, `seat` and `passengers` info to use the API directly.
@@ -29,9 +29,9 @@ filter = create_filter(
             from_airport="TPE", 
             to_airport="MYJ"
         ),
-        # ... include more for round trips and multi-city trips
+        # ... include more for round trips
     ],
-    trip="one-way",  # Trip (round-trip, one-way, multi-city)
+    trip="one-way",  # Trip (round-trip, one-way)
     seat="economy",  # Seat (economy, premium-economy, business or first)
     passengers=Passengers(
         adults=2,
@@ -46,12 +46,25 @@ result = get_flights(filter)
 
 # The price is currently... low/typical/high
 print("The price is currently", result.current_price)
-
-# Display the first flight
-print(result.flights[0])
 ```
 
-Additionally, you can use the `Airport` enum to search for airports in code (as you type)! (See `_generated_enum.py` in source)
+**Information**: Display additional information.
+```python
+# Get the first flight
+flight = result.flights[0]
+
+flight.is_best
+flight.name
+flight.departure
+flight.arrival
+flight.arrival_time_ahead
+flight.duration
+flight.stops
+flight.delay?  # may not be present
+flight.price
+```
+
+**Useless enums**: Additionally, you can use the `Airport` enum to search for airports in code (as you type)! See `_generated_enum.py` in source.
 
 ```python
 Airport.TAIPEI
@@ -63,36 +76,28 @@ Airport.TAIPEI
               |---------------------------------|
 ```
 
-***
-
-## Troubleshooting
-
-Got any problems?
-
-#### I cannot import the package on Replit
-The package name is `fast_flights` while the pip entry is `fast-flights` (notice  the former has an underscore and the latter has a dash).
-
-Either use the `pip` command or install manually using Replit's Packager and search for `fast-flights` (dashed one).
-
-#### No results???
-
-If you're getting this kind of result:
+## Cookies & Consent
+For EU regions, if you didn't consent to Google's Terms of Service, you'll ultimately get blocked.
+You can use the built-in `Cookies` class to pass through this check:
 
 ```python
-Result(flights=[], current_price='')
-```
+from fast_flights import Cookies
 
-There's a huge chance that you didn't consent to Google's Terms of Service.
-
-An easy fix:
-```python
-cookies = { "CONSENT": "YES+" }
-
-# tag: v0.3
+cookies = Cookies.new(locale="de").to_dict()
 get_flights(filter, cookies=cookies)
 ```
 
 See [issue](https://github.com/AWeirdDev/flights/issues/1) #1
+
+## Allow Looping Last Item
+In some rare cases, looping into the last item (internally) would lead to an unknown exit. If you believe your computer is a good boy, disable this restriction by adding the `dangerously_allow_looping_last_item` option:
+
+```python
+get_flights(filter, dangerously_allow_looping_last_item=True)
+```
+
+## About Preflights
+We may request to the server twice as sometimes the initial request would not return any results. When this happens, it counts as a preflight agent and we'll send another request to the server as they build data. You can think of this as a "cold start."
 
 ***
 

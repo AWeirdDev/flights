@@ -1,4 +1,6 @@
+import re
 from typing import Any, Optional
+
 import requests
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
@@ -12,22 +14,31 @@ ua = (
 )
 
 
-def request_flights(tfs: TFSData, **kwargs: Any) -> requests.Response:
+def request_flights(
+    tfs: TFSData,
+    *,
+    currency: Optional[str] = None,
+    language: Optional[str],
+    **kwargs: Any,
+) -> requests.Response:
     r = requests.get(
         "https://www.google.com/travel/flights",
         params={
             "tfs": tfs.as_b64(),
-            "hl": "en",
+            "hl": language,
             "tfu": "EgQIABABIgA",  # show all flights and prices condition
+            "curr": currency,
         },
         headers={"user-agent": ua, "accept-language": "en"},
-        **kwargs
+        **kwargs,
     )
     r.raise_for_status()
     return r
 
 
-def parse_response(r: requests.Response) -> Result:
+def parse_response(
+    r: requests.Response, *, dangerously_allow_looping_last_item: bool = False
+) -> Result:
     class _blank:
         def text(self, *_, **__):
             return ""
@@ -46,7 +57,9 @@ def parse_response(r: requests.Response) -> Result:
     for i, fl in enumerate(parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')):
         is_best_flight = i == 0
 
-        for item in fl.css("ul.Rk10dc li")[:-1]:  # <-- last one would crash
+        for item in fl.css("ul.Rk10dc li")[
+            : (-1 if not dangerously_allow_looping_last_item else None)
+        ]:
             # Flight name
             name = safe(item.css_first("div.sSHqwe.tPgKwe.ogfYpf span")).text(
                 strip=True
@@ -69,6 +82,9 @@ def parse_response(r: requests.Response) -> Result:
             # Get delay
             delay = safe(item.css_first(".GsCCve")).text() or None
 
+            # Get prices
+            price = safe(item.css_first(".YMlIz.FpEdXe")).text() or "0"
+
             flights.append(
                 {
                     "is_best": is_best_flight,
@@ -79,6 +95,7 @@ def parse_response(r: requests.Response) -> Result:
                     "duration": duration,
                     "stops": 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0]),
                     "delay": delay,
+                    "price": int(re.findall(r"(\d+)", price.replace(",", ""))[0]),
                 }
             )
 
@@ -88,8 +105,36 @@ def parse_response(r: requests.Response) -> Result:
     return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
 
 
-def get_flights(tfs: TFSData, **kwargs: Any) -> Result:
-    rs = request_flights(tfs, **kwargs)
-    results = parse_response(rs)
+def get_flights(
+    tfs: TFSData,
+    *,
+    currency: Optional[str] = None,
+    language: Optional[str] = None,
+    cookies: Optional[dict] = None,
+    dangerously_allow_looping_last_item: bool = False,
+    attempted: bool = False,
+    **kwargs: Any,
+) -> Result:
+    rs = request_flights(tfs, currency=currency, language=language, **kwargs)
+    results = parse_response(
+        rs, dangerously_allow_looping_last_item=dangerously_allow_looping_last_item
+    )
+
+    if not results.flights:
+        if not attempted:
+            return get_flights(
+                tfs,
+                cookies=cookies,
+                dangerously_allow_looping_last_item=dangerously_allow_looping_last_item,
+                attempted=True,
+                **kwargs,
+            )
+
+        raise RuntimeError(
+            "No flights found. (preflight checked)\n"
+            "Possible reasons:\n"
+            "- Invalid query (e.g., date is in the past)\n"
+            "- Invalid airport"
+        )
 
     return results
