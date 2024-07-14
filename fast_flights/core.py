@@ -95,7 +95,7 @@ def parse_response(
                     "duration": duration,
                     "stops": 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0]),
                     "delay": delay,
-                    "price": int(re.findall(r"(\d+)", price.replace(",", ""))[0]),
+                    "price": float(re.findall(r"(\d+)", price.replace(",", ""))[0]),
                 }
             )
 
