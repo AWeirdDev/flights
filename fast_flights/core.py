@@ -67,8 +67,13 @@ def parse_response(
 
             # Get departure & arrival time
             dp_ar_node = item.css("span.mv1WYe div")
-            departure_time = dp_ar_node[0].text(strip=True)
-            arrival_time = dp_ar_node[1].text(strip=True)
+            try:
+                departure_time = dp_ar_node[0].text(strip=True)
+                arrival_time = dp_ar_node[1].text(strip=True)
+            except IndexError:
+                # sometimes this is not present
+                departure_time = ""
+                arrival_time = ""
 
             # Get arrival time ahead
             time_ahead = safe(item.css_first("span.bOzv6")).text()

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message Information {
+    string gws = 2; // gws_YYYYMMDD-0_RC2
+    string locale = 3; // e.g., de, en...
+}
+
+message Datetime {
+    uint32 timestamp = 1; // e.g., 1692144000
+}
+
+message SOCS {
+    Information info = 2;
+    Datetime datetime = 3;
+}

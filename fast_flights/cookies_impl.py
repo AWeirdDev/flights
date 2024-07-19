@@ -2,7 +2,7 @@ import base64
 import time
 import datetime as datetimelib
 
-from .cookies_pb2 import Cookies as SOCS, Information, Datetime  # type: ignore
+from .cookies_pb2 import SOCS, Information, Datetime  # type: ignore
 
 
 class Cookies:
@@ -18,16 +18,17 @@ class Cookies:
         self.timestamp = timestamp
 
     def pb(self) -> SOCS:  # type: ignore
-        socs = SOCS()
+        # Info
         info = Information()
         info.gws = self.gws
         info.locale = self.locale
-        socs.info = info
 
+        # Datetime
         datetime = Datetime()
         datetime.timestamp = self.timestamp
-        socs.datetime = datetime
 
+        # SOCS (main)
+        socs = SOCS(info=info, datetime=datetime)
         return socs
 
     def to_string(self) -> bytes:
