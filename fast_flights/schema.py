@@ -20,4 +20,4 @@ class Flight:
     duration: str
     stops: int
     delay: Optional[str]
-    price: float
+    price: str

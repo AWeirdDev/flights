@@ -1,4 +1,3 @@
-import re
 from typing import Any, Optional
 
 import requests
@@ -90,6 +89,12 @@ def parse_response(
             # Get prices
             price = safe(item.css_first(".YMlIz.FpEdXe")).text() or "0"
 
+            # Stops formatting
+            try:
+                stops_fmt = 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0])
+            except ValueError:
+                stops_fmt = "Unknown"
+
             flights.append(
                 {
                     "is_best": is_best_flight,
@@ -98,9 +103,9 @@ def parse_response(
                     "arrival": " ".join(arrival_time.split()),
                     "arrival_time_ahead": time_ahead,
                     "duration": duration,
-                    "stops": 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0]),
+                    "stops": stops_fmt,
                     "delay": delay,
-                    "price": float(re.findall(r"(\d+)", price.replace(",", ""))[0]),
+                    "price": price.replace(",", ""),
                 }
             )
 
