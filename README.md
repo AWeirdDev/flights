@@ -1,4 +1,4 @@
-> v1.0 is now available. [Read on ›](https://github.com/AWeirdDev/flights/wiki/What's-New)
+> I'm looking for maintainers. [Open Issue ›](https://github.com/AWeirdDev/flights/issues/new?title=I+want+to+be+a+maintainer&body=i+think+aweirddev+is+so+bad+at+writing+code+lmao)
 
 <br /><br />
 <div align="center">
