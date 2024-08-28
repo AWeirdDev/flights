@@ -87,7 +87,7 @@ def parse_response(
             delay = safe(item.css_first(".GsCCve")).text() or None
 
             # Get prices
-            price = safe(item.css_first(".YMlIz.FpEdXe")).text() or "0"
+            price = safe(item.css_first(".YMlIz.FpEdX")).text() or "0"
 
             # Stops formatting
             try:
