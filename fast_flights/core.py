@@ -32,6 +32,7 @@ def request_flights(
         **kwargs,
     )
     r.raise_for_status()
+    print(r.text)
     return r
 
 

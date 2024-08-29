@@ -6485,7 +6485,11 @@ CSG,America/New_York,Columbus Airport,CSG,US,POINT (-84.98333 32.466667),252,,KC
 KCN,America/Nome,SPB,KCN,US,POINT (-167.55 53.4),0,,KCN,,,,local
 CUB,America/New_York,Owens Field,CAE,US,POINT (-81.11528 33.936943),180,http://www.columbiasouthcarolina.com/owens.html,KCUB,,,,local
 CYS,America/Denver,Cheyenne,CYS,US,POINT (-104.819273 41.1528709),6174,,KCYS,,,,local
+<<<<<<< HEAD
 DCA,America/New_York,Ronald Reagan National Airport,WAS,US,POINT (-77.04346 38.853436),52,http://www.flyreagan.com/dca/reagan-national-airport,KDCA,,,,international
+=======
+DCA,America/New_York,Ronald Reagan National Airport,WAS,US,POINT (-77.04346 38.853436),52,http://www.flyreagan.com/dca/reagan-national-airport,KDCA,,,,local
+>>>>>>> fea8e96675d6c5aa4133067f1878ccd54fe4d525
 DGL,America/Phoenix,Douglas Municipal,DUG,US,POINT (-109.566666 31.35),3959,,KDGL,,,,local
 KIP,America/Chicago,Kickapoo,SPS,US,POINT (-98.5 33.9),1003,http://www.wichitafallstx.gov/index.aspx?nid=704,KCWC,,,,local
 DNN,America/New_York,Municipal,DNN,US,POINT (-84.96667 34.766666),764,,KDNN,,,,local

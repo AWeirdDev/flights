@@ -1,0 +1,11 @@
+ideal state
+i text J.O.E.
+whats the best flight home next weekend?
+response includes flight details and price
+
+look for a weekend flight to LA in june
+
+i can ask follow ups too
+
+it asks me follow ups like
+'do you need to be there by a certain time?'

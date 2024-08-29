@@ -1,0 +1,33 @@
+Functionality to Add
+Flight Evaluation
+    is it direct?
+    how fast is it?
+    layover time
+    layover location
+    airports to avoid
+    time of day -> morning, afternoon, night, red-eye
+
+Flight Finder
+    airport selection
+    find nearby airports
+    check alternate travel dates
+
+Price Analysis
+    compare prices
+
+Flight Comparison
+    use collected data to determine best flights
+
+"Smart" -> combined
+    evaluate criteria based off my preferences
+    learn my preferences
+
+Texter / correspondence
+    Ask me what i want
+    ask follow up questions
+
+
+In progress / done / todo
+check_airports
+    find nearby airports based off city or airport code - done
+        add spellcheck / autocorrect for common airports i fly
