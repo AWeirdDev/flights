@@ -5,9 +5,10 @@ message Airport {
 }
 
 message FlightData {
- string date = 2;
- Airport from_flight = 13;
- Airport to_flight = 14;
+  string date = 2;
+  Airport from_flight = 13;
+  Airport to_flight = 14;
+  optional int32 max_stops = 5;
 }
 
 enum Seat {

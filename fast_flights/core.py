@@ -16,18 +16,23 @@ ua = (
 def request_flights(
     tfs: TFSData,
     *,
+    max_stops: Optional[int] = None,  # Optionally pass max_stops if needed
     currency: Optional[str] = None,
     language: Optional[str],
     **kwargs: Any,
 ) -> requests.Response:
+    params = {
+        "tfs": tfs.as_b64(),
+        "hl": language,
+        "tfu": "EgQIABABIgA",  # show all flights and prices condition
+        "curr": currency,
+    }
+    if max_stops is not None:
+        params["max_stops"] = max_stops  # Handle max_stops in request
+
     r = requests.get(
         "https://www.google.com/travel/flights",
-        params={
-            "tfs": tfs.as_b64(),
-            "hl": language,
-            "tfu": "EgQIABABIgA",  # show all flights and prices condition
-            "curr": currency,
-        },
+        params=params,
         headers={"user-agent": ua, "accept-language": "en"},
         **kwargs,
     )
