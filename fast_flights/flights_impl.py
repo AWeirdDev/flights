@@ -1,7 +1,7 @@
 """Typed implementation of flights_pb2.py"""
 
 import base64
-from typing import Any, List, TYPE_CHECKING, Literal, Union
+from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union
 
 from . import flights_pb2 as PB
 from ._generated_enum import Airport
@@ -17,12 +17,14 @@ class FlightData:
         date (str): Date.
         from_airport (str): Departure (airport). Where from?
         to_airport (str): Arrival (airport). Where to?
+        max_stops (int, optional): Maximum number of stops. Default is None.
     """
 
-    __slots__ = ("date", "from_airport", "to_airport")
+    __slots__ = ("date", "from_airport", "to_airport", "max_stops")
     date: str
     from_airport: str
     to_airport: str
+    max_stops: Optional[int]
 
     def __init__(
         self,
@@ -30,6 +32,7 @@ class FlightData:
         date: str,
         from_airport: Union[Airport, str],
         to_airport: Union[Airport, str],
+        max_stops: Optional[int] = None,
     ):
         self.date = date
         self.from_airport = (
@@ -38,18 +41,22 @@ class FlightData:
         self.to_airport = (
             to_airport.value if isinstance(to_airport, Airport) else to_airport
         )
+        self.max_stops = max_stops
 
     def attach(self, info: PB.Info) -> None:  # type: ignore
         data = info.data.add()
         data.date = self.date
         data.from_flight.airport = self.from_airport
         data.to_flight.airport = self.to_airport
+        if self.max_stops is not None:
+            data.max_stops = self.max_stops
 
     def __repr__(self) -> str:
         return (
             f"FlightData(date={self.date!r}, "
             f"from_airport={self.from_airport}, "
-            f"to_airport={self.to_airport})"
+            f"to_airport={self.to_airport}, "
+            f"max_stops={self.max_stops})"
         )
 
 
@@ -98,11 +105,13 @@ class TFSData:
         seat: PB.Seat,  # type: ignore
         trip: PB.Trip,  # type: ignore
         passengers: Passengers,
+        max_stops: Optional[int] = None,  # Add max_stops to the constructor
     ):
         self.flight_data = flight_data
         self.seat = seat
         self.trip = trip
         self.passengers = passengers
+        self.max_stops = max_stops  # Store max_stops
 
     def pb(self) -> PB.Info:  # type: ignore
         info = PB.Info()
@@ -113,6 +122,11 @@ class TFSData:
 
         for fd in self.flight_data:
             fd.attach(info)
+
+        # If max_stops is set, attach it to all flight data entries
+        if self.max_stops is not None:
+            for flight in info.data:
+                flight.max_stops = self.max_stops
 
         return info
 
@@ -129,6 +143,7 @@ class TFSData:
         trip: Literal["round-trip", "one-way", "multi-city"],
         passengers: Passengers,
         seat: Literal["economy", "premium-economy", "business", "first"],
+        max_stops: Optional[int] = None,  # Add max_stops to the method signature
     ):
         """Use ``?tfs=`` from an interface.
 
@@ -137,6 +152,7 @@ class TFSData:
             trip ("one-way" | "round-trip" | "multi-city"): Trip type.
             passengers (Passengers): Passengers.
             seat ("economy" | "premium-economy" | "business" | "first"): Seat.
+            max_stops (int, optional): Maximum number of stops.
         """
         trip_t = {
             "round-trip": PB.Trip.ROUND_TRIP,
@@ -151,8 +167,13 @@ class TFSData:
         }[seat]
 
         return TFSData(
-            flight_data=flight_data, seat=seat_t, trip=trip_t, passengers=passengers
+            flight_data=flight_data,
+            seat=seat_t,
+            trip=trip_t,
+            passengers=passengers,
+            max_stops=max_stops  # Pass max_stops into TFSData
         )
 
     def __repr__(self) -> str:
-        return f"TFSData({'hello'!r}, flight_data={self.flight_data!r})"
+        return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+
