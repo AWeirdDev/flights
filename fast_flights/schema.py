@@ -66,26 +66,60 @@ class FlightsAPIRawData:
     def __iter__(self) -> Iterable[RawDataValueType]:
         return self.raw_data.__iter__()
 
+def get_datetime(date_list: List[int], time_list: List[int]) -> datetime:
+    year = date_list[0]
+    month = date_list[1]
+    day = date_list[2]
+
+    if len(time_list) == 2:
+        hour = time_list[0] or 0
+        minute = time_list[1] or 0
+    else:
+        hour = time_list[0] or 0
+        minute = 0
+
+
+    return datetime(year=year, month=month, day=day, hour=hour, minute=minute)
+
 class Trip:
+    airline: IATACode
+    airline_name: str
+
     departure_airport: IATACode
-    departure_airport_name: str
     departure_time: datetime
     arrival_airport: IATACode
-    arrival_airport_name: str
     arrival_time: datetime
     price: int
     num_stops: int
     flights: List[Flight]
 
+    # TODO: Add type for this
+    layovers: List
+
     def __init__(self, trip_data: FlightsAPIRawData):
-        pass
+        self.airline = trip_data[0]
+        self.airline_name = trip_data[1][0]
+        self.flights = [Flight(flight_data) for flight_data in trip_data[2]]
+        self.departure_airport = trip_data[3]
+        self.departure_time = get_datetime(trip_data[4], trip_data[5])
+        self.arrival_airport = trip_data[6]
+        self.arrival_time = get_datetime(trip_data[7], trip_data[8])
+        self.price = trip_data[9]
+        self.layovers = trip_data[13]
+
+    def __str__(self) -> str:
+        return f'{self.airline_name} flight (${self.price}) with {len(self.flights) - 1} stops from {self.departure_airport} at {self.departure_time} to {self.arrival_airport} at {self.arrival_time}'
+
 
 class Flight:
     airline: IATACode
     airline_name: str
+    flight_number: int
+
     depature_time: datetime
     departure_airport: IATACode
     arrival_time: datetime
+    arrival_airport: IATACode
 
     fare_class: str
     carry_on_bag_allowance: int
@@ -94,22 +128,13 @@ class Flight:
     seat_pitch: int
 
     def __init__(self, flight_data: FlightsAPIRawData):
-        data_root = raw_data[0]
-        depart_date = data_root[4]
-        depart_hour = data_root[5][0] or 0
-        depart_minute = data_root[5][1] if len(data_root[5]) == 2 else 0
-        self.depature_time = datetime(*depart_date, hour=depart_hour, minute=depart_minute)
-        arrive_date = data_root[7]
-        arrive_hour = data_root[8][0] or 0
-        arrive_minute = data_root[8][1] if len(data_root[8]) == 2 else 0
-        self.arrival_time = datetime(*arrive_date, hour=arrive_hour, minute=arrive_minute)
-        self.price = data_root[9]
-        self.num_stops = len(data_root[13]) if data_root[13] else 0
-        self.airline = data_root[0]
-        self.flight_nums = [leg[22][1] for leg in data_root[2]]
+        self.airline = flight_data[22][0]
+        self.airline_name = flight_data[22][3]
+        self.flight_number = flight_data[22][1]
+
 
     def __str__(self) -> str:
-        return f'{self.airline}{",".join(self.flight_nums)}: ${self.price}, {self.num_stops} stops, {self.depature_time} -> {self.arrival_time}'
+        return f'{self.airline}{self.flight_number}: {self.depature_time} -> {self.arrival_time}'
 
 
 class FlightsAPIResult:
@@ -125,11 +150,20 @@ class FlightsAPIResult:
         self.other_remaining = other_remaining
         self.raw_data = raw_data
 
-    @classmethod
-    def parse(cls, data_root: List[FlightsAPIRawData.RawDataValueType]) -> 'FlightsAPIResult':
-        raw_data = FlightsAPIRawData(data_root)
+    def __str__(self) -> str:
+        ret = 'Best Flights:\n'
+        for trip in self.best:
+            ret += f'{trip}\n'
+        ret += 'Other Flights:\n'
+        for trip in self.other:
+            ret += f'{trip}\n'
+        return ret
 
-        # TODO: fix type hints?? not sure if even possible
-        best = [Trip(flight_data) for flight_data in raw_data[2,0]]
-        other = [Trip(flight_data) for flight_data in raw_data[3,0]]
-        return cls(best, other, raw_data[3,1], raw_data)
+
+    @classmethod
+    def parse(cls, data: List) -> 'FlightsAPIResult':
+        raw_data = FlightsAPIRawData(data)
+        best_trips = [Trip(trip_data[0]) for trip_data in raw_data[2][0]]
+        other_trips = [Trip(trip_data[0]) for trip_data in raw_data[3][0]]
+
+        return cls(best_trips, other_trips, raw_data[3][1], raw_data)
