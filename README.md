@@ -18,7 +18,7 @@ $ pip install fast-flights
 ## Basic
 
 To use `fast-flights`, you'll first create a filter (inherited from `?tfs=`) to perform a request.
-Then, add `flight_data`, `trip`, `seat` and `passengers` info to use the API directly.
+Then, add `flight_data`, `trip`, `seat`, `passengers`, and (optional) `max_stops` info to use the API directly.
 
 Honorable mention: I like birds. Yes, I like birds.
 
@@ -44,6 +44,7 @@ filter = create_filter(
         infants_in_seat=0,
         infants_on_lap=0
     ),
+    max_stops=args.max_stops
 )
 
 # Get flights with a filter
@@ -52,6 +53,10 @@ result = get_flights(filter)
 # The price is currently... low/typical/high
 print("The price is currently", result.current_price)
 ```
+
+A command-line example script is included as `example.py`. Usage is as follows: 
+
+`python3 example.py --origin LAX --destination LGA --depart_date 2025-2-26 --return_date 2025-02-29 --max_stops 1`
 
 **Information**: Display additional information.
 ```python
