@@ -1,34 +1,20 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
 
 [project]
-name = "fast-flights"
-version = "1.2"
-description = "The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python."
-keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport"]
-authors = [
-  { name = "AWeirdDev", email = "aweirdscratcher@gmail.com" },
-]
-license = { file = "LICENSE" }
-readme = "README.md"
+name = "flights"
+requires-python = ">=3.8"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
 ]
-requires-python = ">=3.7"
-dependencies = [
-  "requests",
-  "protobuf",
-  "selectolax"
+dynamic = ["version"]
+[project.optional-dependencies]
+tests = [
+    "pytest",
 ]
-
-[project.urls]
-"Homepage" = "https://github.com/AWeirdDev/flights"
-"Bug Tracker" = "https://github.com/AWeirdDev/flights/issues"
-
-[tool.setuptools]
-packages = [
-    "fast_flights"
-]
+[tool.maturin]
+python-source = "python"
+features = ["pyo3/extension-module"]

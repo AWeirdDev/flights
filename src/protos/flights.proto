@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+message Airport {
+  string airport = 2;
+}
+
+message FlightData {
+  string date = 2;
+  Airport from_flight = 13;
+  Airport to_flight = 14;
+  optional int32 max_stops = 5;
+}
+
+enum Seat {
+  UNKNOWN_SEAT = 0;
+  ECONOMY = 1;
+  PREMIUM_ECONOMY = 2;
+  BUSINESS = 3;
+  FIRST = 4;
+}
+
+enum Trip {
+  UNKNOWN_TRIP = 0;
+  ROUND_TRIP = 1;
+  ONE_WAY = 2;
+  MULTI_CITY = 3; // not implemented
+}
+
+enum Passenger {
+  UNKNOWN_PASSENGER = 0;
+  ADULT = 1;
+  CHILD = 2;
+  INFANT_IN_SEAT = 3;
+  INFANT_ON_LAP  = 4;
+}
+
+message Info {
+  repeated FlightData data = 3;
+  Seat seat = 9;
+  repeated Passenger passengers = 8;
+  Trip trip = 19;
+}
