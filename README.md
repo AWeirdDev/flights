@@ -1,6 +1,6 @@
 > I'm looking for maintainers. [Open Issue ›](https://github.com/AWeirdDev/flights/issues/new?title=I+want+to+be+a+maintainer&body=i+think+aweirddev+is+so+bad+at+writing+code+lmao)
 >
-> You know what? It's time for Rust.
+> Further development has been moved to the `v2` branch.
 
 <br /><br />
 <div align="center">
