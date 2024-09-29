@@ -53,7 +53,6 @@ pub fn make_tfs(
                         name: value.extract::<String>(py)?,
                     })
                 }
-                "max_stops" => data.max_stops = value.extract::<u32>(py)?,
                 _ => return Err(PyErr::new::<pyo3::exceptions::PyKeyError, _>(key)),
             }
         }

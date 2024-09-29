@@ -1,17 +1,10 @@
-from python.airflights import make_tfs
+from python.airflights import Flight, Passengers, get
 
 print(
-    make_tfs(
-        [
-            {
-                "date": "2022-01-01",
-                "from": "SFO",
-                "to": "LAX",
-                "max_stops": 3,
-            }
-        ],
-        "economy",
-        ["adult"],
-        "round_trip",
-    ).base64()
+    get(
+        flights=[Flight(date="2024-10-01", from_airport="TPE", to_airport="MYJ")],
+        passengers=Passengers(adults=1),
+        trip="one_way",
+        seat="economy"
+    )
 )

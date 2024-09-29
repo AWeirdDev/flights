@@ -12,3 +12,4 @@ crate-type = ["cdylib"]
 base64_light = "0.1.5"
 pyo3 = "0.22.0"
 quick-protobuf = "0.8.1"
+rand = "0.8.5"

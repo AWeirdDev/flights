@@ -160,7 +160,6 @@ impl MessageWrite for Airport {
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct FlightData {
     pub date: String,
-    pub max_stops: u32,
     pub from: Option<flights::Airport>,
     pub to: Option<flights::Airport>,
 }
@@ -171,7 +170,6 @@ impl<'a> MessageRead<'a> for FlightData {
         while !r.is_eof() {
             match r.next_tag(bytes) {
                 Ok(18) => msg.date = r.read_string(bytes)?.to_owned(),
-                Ok(40) => msg.max_stops = r.read_uint32(bytes)?,
                 Ok(106) => msg.from = Some(r.read_message::<flights::Airport>(bytes)?),
                 Ok(114) => msg.to = Some(r.read_message::<flights::Airport>(bytes)?),
                 Ok(t) => { r.read_unknown(bytes, t)?; }
@@ -186,14 +184,12 @@ impl MessageWrite for FlightData {
     fn get_size(&self) -> usize {
         0
         + if self.date == String::default() { 0 } else { 1 + sizeof_len((&self.date).len()) }
-        + if self.max_stops == 0u32 { 0 } else { 1 + sizeof_varint(*(&self.max_stops) as u64) }
         + self.from.as_ref().map_or(0, |m| 1 + sizeof_len((m).get_size()))
         + self.to.as_ref().map_or(0, |m| 1 + sizeof_len((m).get_size()))
     }
 
     fn write_message<W: WriterBackend>(&self, w: &mut Writer<W>) -> Result<()> {
         if self.date != String::default() { w.write_with_tag(18, |w| w.write_string(&**&self.date))?; }
-        if self.max_stops != 0u32 { w.write_with_tag(40, |w| w.write_uint32(*&self.max_stops))?; }
         if let Some(ref s) = self.from { w.write_with_tag(106, |w| w.write_message(s))?; }
         if let Some(ref s) = self.to { w.write_with_tag(114, |w| w.write_message(s))?; }
         Ok(())
