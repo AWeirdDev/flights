@@ -9,14 +9,12 @@
 #![cfg_attr(rustfmt, rustfmt_skip)]
 
 
-use std::borrow::Cow;
 use quick_protobuf::{MessageInfo, MessageRead, MessageWrite, BytesReader, Writer, WriterBackend, Result};
 use quick_protobuf::sizeofs::*;
 use super::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Seat {
-    UNKNOWN_SEAT = 0,
     ECONOMY = 1,
     PREMIUM_ECONOMY = 2,
     BUSINESS = 3,
@@ -25,14 +23,13 @@ pub enum Seat {
 
 impl Default for Seat {
     fn default() -> Self {
-        Seat::UNKNOWN_SEAT
+        Seat::ECONOMY
     }
 }
 
 impl From<i32> for Seat {
     fn from(i: i32) -> Self {
         match i {
-            0 => Seat::UNKNOWN_SEAT,
             1 => Seat::ECONOMY,
             2 => Seat::PREMIUM_ECONOMY,
             3 => Seat::BUSINESS,
@@ -45,7 +42,6 @@ impl From<i32> for Seat {
 impl<'a> From<&'a str> for Seat {
     fn from(s: &'a str) -> Self {
         match s {
-            "UNKNOWN_SEAT" => Seat::UNKNOWN_SEAT,
             "ECONOMY" => Seat::ECONOMY,
             "PREMIUM_ECONOMY" => Seat::PREMIUM_ECONOMY,
             "BUSINESS" => Seat::BUSINESS,
@@ -57,7 +53,6 @@ impl<'a> From<&'a str> for Seat {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Trip {
-    UNKNOWN_TRIP = 0,
     ROUND_TRIP = 1,
     ONE_WAY = 2,
     MULTI_CITY = 3,
@@ -65,14 +60,13 @@ pub enum Trip {
 
 impl Default for Trip {
     fn default() -> Self {
-        Trip::UNKNOWN_TRIP
+        Trip::ROUND_TRIP
     }
 }
 
 impl From<i32> for Trip {
     fn from(i: i32) -> Self {
         match i {
-            0 => Trip::UNKNOWN_TRIP,
             1 => Trip::ROUND_TRIP,
             2 => Trip::ONE_WAY,
             3 => Trip::MULTI_CITY,
@@ -84,7 +78,6 @@ impl From<i32> for Trip {
 impl<'a> From<&'a str> for Trip {
     fn from(s: &'a str) -> Self {
         match s {
-            "UNKNOWN_TRIP" => Trip::UNKNOWN_TRIP,
             "ROUND_TRIP" => Trip::ROUND_TRIP,
             "ONE_WAY" => Trip::ONE_WAY,
             "MULTI_CITY" => Trip::MULTI_CITY,
@@ -95,7 +88,6 @@ impl<'a> From<&'a str> for Trip {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Passenger {
-    UNKNOWN_PASSENGER = 0,
     ADULT = 1,
     CHILD = 2,
     INFANT_IN_SEAT = 3,
@@ -104,14 +96,13 @@ pub enum Passenger {
 
 impl Default for Passenger {
     fn default() -> Self {
-        Passenger::UNKNOWN_PASSENGER
+        Passenger::ADULT
     }
 }
 
 impl From<i32> for Passenger {
     fn from(i: i32) -> Self {
         match i {
-            0 => Passenger::UNKNOWN_PASSENGER,
             1 => Passenger::ADULT,
             2 => Passenger::CHILD,
             3 => Passenger::INFANT_IN_SEAT,
@@ -124,7 +115,6 @@ impl From<i32> for Passenger {
 impl<'a> From<&'a str> for Passenger {
     fn from(s: &'a str) -> Self {
         match s {
-            "UNKNOWN_PASSENGER" => Passenger::UNKNOWN_PASSENGER,
             "ADULT" => Passenger::ADULT,
             "CHILD" => Passenger::CHILD,
             "INFANT_IN_SEAT" => Passenger::INFANT_IN_SEAT,
@@ -136,16 +126,16 @@ impl<'a> From<&'a str> for Passenger {
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Default, PartialEq, Clone)]
-pub struct Airport<'a> {
-    pub airport: Cow<'a, str>,
+pub struct Airport {
+    pub name: String,
 }
 
-impl<'a> MessageRead<'a> for Airport<'a> {
+impl<'a> MessageRead<'a> for Airport {
     fn from_reader(r: &mut BytesReader, bytes: &'a [u8]) -> Result<Self> {
         let mut msg = Self::default();
         while !r.is_eof() {
             match r.next_tag(bytes) {
-                Ok(18) => msg.airport = r.read_string(bytes).map(Cow::Borrowed)?,
+                Ok(18) => msg.name = r.read_string(bytes)?.to_owned(),
                 Ok(t) => { r.read_unknown(bytes, t)?; }
                 Err(e) => return Err(e),
             }
@@ -154,36 +144,36 @@ impl<'a> MessageRead<'a> for Airport<'a> {
     }
 }
 
-impl<'a> MessageWrite for Airport<'a> {
+impl MessageWrite for Airport {
     fn get_size(&self) -> usize {
         0
-        + if self.airport == "" { 0 } else { 1 + sizeof_len((&self.airport).len()) }
+        + if self.name == String::default() { 0 } else { 1 + sizeof_len((&self.name).len()) }
     }
 
     fn write_message<W: WriterBackend>(&self, w: &mut Writer<W>) -> Result<()> {
-        if self.airport != "" { w.write_with_tag(18, |w| w.write_string(&**&self.airport))?; }
+        if self.name != String::default() { w.write_with_tag(18, |w| w.write_string(&**&self.name))?; }
         Ok(())
     }
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Default, PartialEq, Clone)]
-pub struct FlightData<'a> {
-    pub date: Cow<'a, str>,
-    pub from_flight: Option<Airport<'a>>,
-    pub to_flight: Option<Airport<'a>>,
-    pub max_stops: i32,
+pub struct FlightData {
+    pub date: String,
+    pub max_stops: u32,
+    pub from: Option<flights::Airport>,
+    pub to: Option<flights::Airport>,
 }
 
-impl<'a> MessageRead<'a> for FlightData<'a> {
+impl<'a> MessageRead<'a> for FlightData {
     fn from_reader(r: &mut BytesReader, bytes: &'a [u8]) -> Result<Self> {
         let mut msg = Self::default();
         while !r.is_eof() {
             match r.next_tag(bytes) {
-                Ok(18) => msg.date = r.read_string(bytes).map(Cow::Borrowed)?,
-                Ok(106) => msg.from_flight = Some(r.read_message::<Airport>(bytes)?),
-                Ok(114) => msg.to_flight = Some(r.read_message::<Airport>(bytes)?),
-                Ok(40) => msg.max_stops = r.read_int32(bytes)?,
+                Ok(18) => msg.date = r.read_string(bytes)?.to_owned(),
+                Ok(40) => msg.max_stops = r.read_uint32(bytes)?,
+                Ok(106) => msg.from = Some(r.read_message::<flights::Airport>(bytes)?),
+                Ok(114) => msg.to = Some(r.read_message::<flights::Airport>(bytes)?),
                 Ok(t) => { r.read_unknown(bytes, t)?; }
                 Err(e) => return Err(e),
             }
@@ -192,39 +182,39 @@ impl<'a> MessageRead<'a> for FlightData<'a> {
     }
 }
 
-impl<'a> MessageWrite for FlightData<'a> {
+impl MessageWrite for FlightData {
     fn get_size(&self) -> usize {
         0
-        + if self.date == "" { 0 } else { 1 + sizeof_len((&self.date).len()) }
-        + self.from_flight.as_ref().map_or(0, |m| 1 + sizeof_len((m).get_size()))
-        + self.to_flight.as_ref().map_or(0, |m| 1 + sizeof_len((m).get_size()))
-        + if self.max_stops == 0i32 { 0 } else { 1 + sizeof_varint(*(&self.max_stops) as u64) }
+        + if self.date == String::default() { 0 } else { 1 + sizeof_len((&self.date).len()) }
+        + if self.max_stops == 0u32 { 0 } else { 1 + sizeof_varint(*(&self.max_stops) as u64) }
+        + self.from.as_ref().map_or(0, |m| 1 + sizeof_len((m).get_size()))
+        + self.to.as_ref().map_or(0, |m| 1 + sizeof_len((m).get_size()))
     }
 
     fn write_message<W: WriterBackend>(&self, w: &mut Writer<W>) -> Result<()> {
-        if self.date != "" { w.write_with_tag(18, |w| w.write_string(&**&self.date))?; }
-        if let Some(ref s) = self.from_flight { w.write_with_tag(106, |w| w.write_message(s))?; }
-        if let Some(ref s) = self.to_flight { w.write_with_tag(114, |w| w.write_message(s))?; }
-        if self.max_stops != 0i32 { w.write_with_tag(40, |w| w.write_int32(*&self.max_stops))?; }
+        if self.date != String::default() { w.write_with_tag(18, |w| w.write_string(&**&self.date))?; }
+        if self.max_stops != 0u32 { w.write_with_tag(40, |w| w.write_uint32(*&self.max_stops))?; }
+        if let Some(ref s) = self.from { w.write_with_tag(106, |w| w.write_message(s))?; }
+        if let Some(ref s) = self.to { w.write_with_tag(114, |w| w.write_message(s))?; }
         Ok(())
     }
 }
 
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Default, PartialEq, Clone)]
-pub struct Info<'a> {
-    pub data: Vec<FlightData<'a>>,
-    pub seat: Seat,
-    pub passengers: Vec<Passenger>,
-    pub trip: Trip,
+pub struct Tfs {
+    pub data: Vec<flights::FlightData>,
+    pub seat: flights::Seat,
+    pub passengers: Vec<flights::Passenger>,
+    pub trip: flights::Trip,
 }
 
-impl<'a> MessageRead<'a> for Info<'a> {
+impl<'a> MessageRead<'a> for Tfs {
     fn from_reader(r: &mut BytesReader, bytes: &'a [u8]) -> Result<Self> {
         let mut msg = Self::default();
         while !r.is_eof() {
             match r.next_tag(bytes) {
-                Ok(26) => msg.data.push(r.read_message::<FlightData>(bytes)?),
+                Ok(26) => msg.data.push(r.read_message::<flights::FlightData>(bytes)?),
                 Ok(72) => msg.seat = r.read_enum(bytes)?,
                 Ok(66) => msg.passengers = r.read_packed(bytes, |r, bytes| Ok(r.read_enum(bytes)?))?,
                 Ok(152) => msg.trip = r.read_enum(bytes)?,
@@ -236,20 +226,20 @@ impl<'a> MessageRead<'a> for Info<'a> {
     }
 }
 
-impl<'a> MessageWrite for Info<'a> {
+impl MessageWrite for Tfs {
     fn get_size(&self) -> usize {
         0
         + self.data.iter().map(|s| 1 + sizeof_len((s).get_size())).sum::<usize>()
-        + if self.seat == flights::Seat::UNKNOWN_SEAT { 0 } else { 1 + sizeof_varint(*(&self.seat) as u64) }
+        + if self.seat == flights::Seat::ECONOMY { 0 } else { 1 + sizeof_varint(*(&self.seat) as u64) }
         + if self.passengers.is_empty() { 0 } else { 1 + sizeof_len(self.passengers.iter().map(|s| sizeof_varint(*(s) as u64)).sum::<usize>()) }
-        + if self.trip == flights::Trip::UNKNOWN_TRIP { 0 } else { 2 + sizeof_varint(*(&self.trip) as u64) }
+        + if self.trip == flights::Trip::ROUND_TRIP { 0 } else { 2 + sizeof_varint(*(&self.trip) as u64) }
     }
 
     fn write_message<W: WriterBackend>(&self, w: &mut Writer<W>) -> Result<()> {
         for s in &self.data { w.write_with_tag(26, |w| w.write_message(s))?; }
-        if self.seat != flights::Seat::UNKNOWN_SEAT { w.write_with_tag(72, |w| w.write_enum(*&self.seat as i32))?; }
+        if self.seat != flights::Seat::ECONOMY { w.write_with_tag(72, |w| w.write_enum(*&self.seat as i32))?; }
         w.write_packed_with_tag(66, &self.passengers, |w, m| w.write_enum(*m as i32), &|m| sizeof_varint(*(m) as u64))?;
-        if self.trip != flights::Trip::UNKNOWN_TRIP { w.write_with_tag(152, |w| w.write_enum(*&self.trip as i32))?; }
+        if self.trip != flights::Trip::ROUND_TRIP { w.write_with_tag(152, |w| w.write_enum(*&self.trip as i32))?; }
         Ok(())
     }
 }
