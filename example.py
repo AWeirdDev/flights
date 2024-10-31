@@ -31,6 +31,8 @@ def main():
     parser.add_argument('--adults', type=int, default=1, help="Number of adult passengers")
     parser.add_argument('--type', type=str, default="economy", help="Fare class (economy, premium-economy, business or first)")
     parser.add_argument('--max_stops', type=int, help="Maximum number of stops (optional, [0|1|2])")
+    parser.add_argument('--inject_eu_cookies', action=argparse.BooleanOptionalAction, help="Cookies to bypass EU data collection form")
+
 
     args = parser.parse_args()
 
@@ -65,7 +67,9 @@ def main():
     )
 
     # Get flights with the filter
-    result = get_flights(filter)
+    result = get_flights(filter,
+                         inject_eu_cookies=args.inject_eu_cookies
+                         )
 
     try:
         # Manually convert the result to a dictionary before serialization

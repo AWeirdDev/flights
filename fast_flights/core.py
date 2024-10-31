@@ -12,6 +12,11 @@ ua = (
     "Chrome/123.0.0.0 Safari/537.36 OPR/109.0.0.0"
 )
 
+eu_cookies = {
+    "CONSENT": "PENDING+987",
+    "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg"
+}
+
 
 def request_flights(
     tfs: TFSData,
@@ -126,11 +131,18 @@ def get_flights(
     currency: Optional[str] = None,
     language: Optional[str] = None,
     cookies: Optional[dict] = None,
+    inject_eu_cookies: bool = False,
     dangerously_allow_looping_last_item: bool = False,
     attempted: bool = False,
     **kwargs: Any,
 ) -> Result:
-    rs = request_flights(tfs, currency=currency, language=language, **kwargs)
+    if inject_eu_cookies and cookies:
+        # merge the given dict and the required eu cookies dict
+        # this will override given cookies with the listed EU ones
+        cookies = cookies | eu_cookies
+    elif inject_eu_cookies:
+        cookies = eu_cookies
+    rs = request_flights(tfs, currency=currency, language=language, cookies=cookies, **kwargs)
     results = parse_response(
         rs, dangerously_allow_looping_last_item=dangerously_allow_looping_last_item
     )
@@ -140,6 +152,7 @@ def get_flights(
             return get_flights(
                 tfs,
                 cookies=cookies,
+                inject_eu_cookies=inject_eu_cookies,
                 dangerously_allow_looping_last_item=dangerously_allow_looping_last_item,
                 attempted=True,
                 **kwargs,
@@ -149,7 +162,8 @@ def get_flights(
             "No flights found. (preflight checked)\n"
             "Possible reasons:\n"
             "- Invalid query (e.g., date is in the past or cannot be booked)\n"
-            "- Invalid airport"
+            "- Invalid airport\n"
+            "- Blocked by EU consent form.  Try enabling --inject_eu_cookies"
         )
 
     return results
