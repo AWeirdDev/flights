@@ -1,13 +1,13 @@
-> I'm looking for maintainers. [Open Issue ›](https://github.com/AWeirdDev/flights/issues/new?title=I+want+to+be+a+maintainer&body=i+think+aweirddev+is+so+bad+at+writing+code+lmao)
+> ~~I'm looking for maintainers.~~ Nevermind, a bot would work.
 >
-> Further development has been moved to the `v2` branch.
+> **Further development has been moved to the `v2` branch.**
 
 <br /><br />
 <div align="center">
 
-# flights (fast-flights)
+# fast-flights
 
-The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python. Based on Base64-encoded Protobuf string.
+The fast and strongly-typed Google Flights scraper (API) implemented in Python. Based on Base64-encoded Protobuf string.
 
 ```haskell
 $ pip install fast-flights
@@ -15,12 +15,108 @@ $ pip install fast-flights
 
 </div>
 
-## Basic
+## Notes
+We're using Protobuf strings to generate the `tfs` query parameter, which stores all the information for a lookup request. We then parse the HTML content and extract the info we need.
 
+Generally speaking, using the `requests` module with naively-inserted `User-Agent` headers to scrape Google websites is a horrible idea since it's too easy to detect on the server-side. I've been blocked once, and it lasted for almost 3 months. If you're looking to be more stable, I recommend using proxies or replace the `requests` module in the source code to `primp`, which is a scraper yet highly optimized for browser impersonation. Since `primp` doesn't come with type annotations, you may create a file named `primp.py` importing the necessary items (`Client`) and constructing a blank class for `Response`, which is not directly importable from `primp`. Type definitions (`.pyi`) for `primp`:
+
+<details>
+<summary>Expand <code>primp.pyi</code></summary>
+
+```python
+from typing import Dict, Optional, Tuple
+
+class Client:
+    """Initializes an HTTP client that can impersonate web browsers.
+
+    Args:
+        auth (tuple, optional): A tuple containing the username and password for basic authentication. Default is None.
+        auth_bearer (str, optional): Bearer token for authentication. Default is None.
+        params (dict, optional): Default query parameters to include in all requests. Default is None.
+        headers (dict, optional): Default headers to send with requests. If `impersonate` is set, this will be ignored.
+        cookies (dict, optional): - An optional map of cookies to send with requests as the `Cookie` header.
+        timeout (float, optional): HTTP request timeout in seconds. Default is 30.
+        cookie_store (bool, optional): Enable a persistent cookie store. Received cookies will be preserved and included
+            in additional requests. Default is True.
+        referer (bool, optional): Enable or disable automatic setting of the `Referer` header. Default is True.
+        proxy (str, optional): Proxy URL for HTTP requests. Example: "socks5://127.0.0.1:9150". Default is None.
+        impersonate (str, optional): Entity to impersonate. Example: "chrome_124". Default is None.
+            Chrome: "chrome_100","chrome_101","chrome_104","chrome_105","chrome_106","chrome_107","chrome_108",
+                "chrome_109","chrome_114","chrome_116","chrome_117","chrome_118","chrome_119","chrome_120",
+                "chrome_123","chrome_124","chrome_126","chrome_127","chrome_128"
+            Safari: "safari_ios_16.5","safari_ios_17.2","safari_ios_17.4.1","safari_15.3","safari_15.5","safari_15.6.1",
+                "safari_16","safari_16.5","safari_17.0","safari_17.2.1","safari_17.4.1","safari_17.5"
+            OkHttp: "okhttp_3.9","okhttp_3.11","okhttp_3.13","okhttp_3.14","okhttp_4.9","okhttp_4.10","okhttp_5"
+            Edge: "edge_101","edge_122","edge_127"
+        follow_redirects (bool, optional): Whether to follow redirects. Default is True.
+        max_redirects (int, optional): Maximum redirects to follow. Default 20. Applies if `follow_redirects` is True.
+        verify (bool, optional): Verify SSL certificates. Default is True.
+        ca_cert_file (str, optional): Path to CA certificate store. Default is None.
+        http1 (bool, optional): Use only HTTP/1.1. Default is None.
+        http2 (bool, optional): Use only HTTP/2. Default is None.
+
+    """
+
+    def __init__(
+        self,
+        auth: Optional[Tuple[str, Optional[str]]] = None,
+        auth_bearer: Optional[str] = None,
+        params: Optional[Dict[str, str]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        cookies: Optional[Dict[str, str]] = None,
+        timeout: Optional[float] = 30,
+        cookie_store: Optional[bool] = True,
+        referer: Optional[bool] = True,
+        proxy: Optional[str] = None,
+        impersonate: Optional[str] = None,
+        follow_redirects: Optional[bool] = True,
+        max_redirects: Optional[int] = 20,
+        verify: Optional[bool] = True,
+        ca_cert_file: Optional[str] = None,
+        http1: Optional[bool] = None,
+        http2: Optional[bool] = None,
+    ): ...
+    def get(
+        self,
+        url: str,
+        params: Optional[Dict[str, str]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        cookies: Optional[Dict[str, str]] = None,
+        auth: Optional[Tuple[str, Optional[str]]] = None,
+        auth_bearer: Optional[str] = None,
+        timeout: Optional[float] = 30,
+    ) -> "Response":
+        """Performs a GET request to the specified URL.
+
+        Args:
+            url (str): The URL to which the request will be made.
+            params (Optional[Dict[str, str]]): A map of query parameters to append to the URL. Default is None.
+            headers (Optional[Dict[str, str]]): A map of HTTP headers to send with the request. Default is None.
+            cookies (Optional[Dict[str, str]]): - An optional map of cookies to send with requests as the `Cookie` header.
+            auth (Optional[Tuple[str, Optional[str]]]): A tuple containing the username and an optional password
+                for basic authentication. Default is None.
+            auth_bearer (Optional[str]): A string representing the bearer token for bearer token authentication. Default is None.
+            timeout (Optional[float]): The timeout for the request in seconds. Default is 30.
+
+        """
+
+class Response:
+    content: str
+    cookies: Dict[str, str]
+    headers: Dict[str, str]
+    status_code: int
+    text: str
+    text_markdown: str
+    text_plain: str
+    text_rich: str
+    url: str
+```
+
+</details>
+
+## Basics
 To use `fast-flights`, you'll first create a filter (inherited from `?tfs=`) to perform a request.
 Then, add `flight_data`, `trip`, `seat`, `passengers`, and (optional) `max_stops` info to use the API directly.
-
-Honorable mention: I like birds. Yes, I like birds.
 
 ```python
 from fast_flights import FlightData, Passengers, create_filter, get_flights
@@ -44,7 +140,7 @@ filter = create_filter(
         infants_in_seat=0,
         infants_on_lap=0
     ),
-    max_stops=args.max_stops
+    max_stops=None  # or specify number
 )
 
 # Get flights with a filter
@@ -108,12 +204,6 @@ get_flights(filter, dangerously_allow_looping_last_item=True)
 
 ## About Preflights
 We may request to the server twice as sometimes the initial request would not return any results. When this happens, it counts as a preflight agent and we'll send another request to the server as they build data. You can think of this as a "cold start."
-
-***
-
-The documentation was here. Who the hell moved it?!
-
-***
 
 ## How it's made
 
