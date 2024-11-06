@@ -67,7 +67,7 @@ def parse_response(
         is_best_flight = i == 0
 
         for item in fl.css("ul.Rk10dc li")[
-            : (-1 if not dangerously_allow_looping_last_item else None)
+            : (None if dangerously_allow_looping_last_item or i == 0 else -1)
         ]:
             # Flight name
             name = safe(item.css_first("div.sSHqwe.tPgKwe.ogfYpf span")).text(
