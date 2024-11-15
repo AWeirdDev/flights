@@ -5,9 +5,11 @@
 <br /><br />
 <div align="center">
 
-# fast-flights
+# ✈️ fast-flights
 
 The fast and strongly-typed Google Flights scraper (API) implemented in Python. Based on Base64-encoded Protobuf string.
+
+[Issues](https://github.com/AWeirdDev/flights/issues) • [Discussions](https://github.com/AWeirdDev/flights/discussions)
 
 ```haskell
 $ pip install fast-flights
@@ -115,7 +117,7 @@ class Response:
 </details>
 
 ## Basics
-To use `fast-flights`, you'll first create a filter (inherited from `?tfs=`) to perform a request.
+**TL;;DR**: To use `fast-flights`, you'll first create a filter (for `?tfs=`) to perform a request.
 Then, add `flight_data`, `trip`, `seat`, `passengers`, and (optional) `max_stops` info to use the API directly.
 
 ```python
@@ -150,7 +152,7 @@ result = get_flights(filter)
 print("The price is currently", result.current_price)
 ```
 
-A command-line example script is included as `example.py`. Usage is as follows: 
+**CLI**: A command-line example script is included as `example.py`. Usage is as follows: 
 
 `python3 example.py --origin LAX --destination LGA --depart_date 2025-2-26 --return_date 2025-02-29 --max_stops 1`
 
@@ -182,28 +184,12 @@ Airport.TAIPEI
               |---------------------------------|
 ```
 
-## Cookies & Consent
-For EU regions, if you didn't consent to Google's Terms of Service, you'll ultimately get blocked.
-You can use the built-in `Cookies` class to pass through this check:
+**Preflights**: We may request to the server twice as sometimes the initial request would not return any results. When this happens, it counts as a preflight agent and we'll send another request to the server as they build data. You can think of this as a "cold start."
 
-```python
-from fast_flights import Cookies
+## Cookies & consent
+The EU region is a bit tricky to solve for now, I'll find workarounds soon.
 
-cookies = Cookies.new(locale="de").to_dict()
-get_flights(filter, cookies=cookies)
-```
-
-See [issue](https://github.com/AWeirdDev/flights/issues/1) #1
-
-## Allow Looping Last Item
-In some rare cases, looping into the last item (internally) would lead to an unknown exit. If you believe your computer is a good boy, disable this restriction by adding the `dangerously_allow_looping_last_item` option:
-
-```python
-get_flights(filter, dangerously_allow_looping_last_item=True)
-```
-
-## About Preflights
-We may request to the server twice as sometimes the initial request would not return any results. When this happens, it counts as a preflight agent and we'll send another request to the server as they build data. You can think of this as a "cold start."
+***
 
 ## How it's made
 
