@@ -24,3 +24,10 @@ get(
     )
 )
 ```
+
+## Progress of `v2`
+Weird. I created Protobufs and tried to encode data with it, but it just wouldn't work. Same file, different results for different runtimes (Python OK, Rust failed)... like WTF?
+
+I'm guessing it's because of the Base64 crate I'm using. It's currently a "simpler version" of base64 (they claimed?) but I suspect it's their fault.
+
+Will change the deps later.
