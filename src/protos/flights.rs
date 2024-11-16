@@ -160,8 +160,8 @@ impl MessageWrite for Airport {
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct FlightData {
     pub date: String,
-    pub from: Option<flights::Airport>,
-    pub to: Option<flights::Airport>,
+    pub from: Option<Airport>,
+    pub to: Option<Airport>,
 }
 
 impl<'a> MessageRead<'a> for FlightData {
@@ -170,8 +170,8 @@ impl<'a> MessageRead<'a> for FlightData {
         while !r.is_eof() {
             match r.next_tag(bytes) {
                 Ok(18) => msg.date = r.read_string(bytes)?.to_owned(),
-                Ok(106) => msg.from = Some(r.read_message::<flights::Airport>(bytes)?),
-                Ok(114) => msg.to = Some(r.read_message::<flights::Airport>(bytes)?),
+                Ok(106) => msg.from = Some(r.read_message::<Airport>(bytes)?),
+                Ok(114) => msg.to = Some(r.read_message::<Airport>(bytes)?),
                 Ok(t) => { r.read_unknown(bytes, t)?; }
                 Err(e) => return Err(e),
             }
@@ -199,10 +199,10 @@ impl MessageWrite for FlightData {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct Tfs {
-    pub data: Vec<flights::FlightData>,
-    pub seat: flights::Seat,
-    pub passengers: Vec<flights::Passenger>,
-    pub trip: flights::Trip,
+    pub data: Vec<FlightData>,
+    pub seat: Seat,
+    pub passengers: Vec<Passenger>,
+    pub trip: Trip,
 }
 
 impl<'a> MessageRead<'a> for Tfs {
@@ -210,7 +210,7 @@ impl<'a> MessageRead<'a> for Tfs {
         let mut msg = Self::default();
         while !r.is_eof() {
             match r.next_tag(bytes) {
-                Ok(26) => msg.data.push(r.read_message::<flights::FlightData>(bytes)?),
+                Ok(26) => msg.data.push(r.read_message::<FlightData>(bytes)?),
                 Ok(72) => msg.seat = r.read_enum(bytes)?,
                 Ok(66) => msg.passengers = r.read_packed(bytes, |r, bytes| Ok(r.read_enum(bytes)?))?,
                 Ok(152) => msg.trip = r.read_enum(bytes)?,

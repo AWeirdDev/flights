@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use base64_light::base64_encode_bytes;
+use base64::Engine;
 use pyo3::{prelude::*, types::PyBytes};
 use quick_protobuf::serialize_into_vec;
 
@@ -23,7 +23,7 @@ impl Tfs {
     }
 
     fn base64(&self) -> String {
-        base64_encode_bytes(&self.bytes)
+        base64::engine::general_purpose::STANDARD.encode(&self.bytes)
     }
 }
 

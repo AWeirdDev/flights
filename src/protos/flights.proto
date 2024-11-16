@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-package flights;
-
 message Airport {
   string name = 2;
 }

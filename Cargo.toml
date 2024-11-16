@@ -9,6 +9,7 @@ name = "airflights"
 crate-type = ["cdylib"]
 
 [dependencies]
+base64 = "0.22.1"
 base64_light = "0.1.5"
 pyo3 = "0.22.0"
 quick-protobuf = "0.8.1"
