@@ -1,169 +1,179 @@
-from typing import Any, Optional
+from __future__ import annotations
 
-import requests
-from selectolax.lexbor import LexborHTMLParser, LexborNode
+import asyncio
+import logging
+import random
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+import aiohttp
+from selectolax.lexbor import LexborHTMLParser
 
 from .flights_impl import TFSData
-from .schema import Flight, Result
+from .schema import Result
 
-ua = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/123.0.0.0 Safari/537.36 OPR/109.0.0.0"
+if TYPE_CHECKING:
+    pass
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+logger = logging.getLogger(__name__)
 
+# Common browser headers
+BROWSER_HEADERS = [
+    {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Pragma": "no-cache",
+        "Cache-Control": "no-cache",
+    },
+]
+
+# EU cookie consent
 eu_cookies = {
     "CONSENT": "PENDING+987",
-    "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg"
+    "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg",
 }
 
 
-def request_flights(
-    tfs: TFSData,
-    *,
-    max_stops: Optional[int] = None,  # Optionally pass max_stops if needed
-    currency: Optional[str] = None,
-    language: Optional[str],
-    **kwargs: Any,
-) -> requests.Response:
-    params = {
-        "tfs": tfs.as_b64(),
-        "hl": language,
-        "tfu": "EgQIABABIgA",  # show all flights and prices condition
-        "curr": currency,
-    }
-    if max_stops is not None:
-        params["max_stops"] = max_stops  # Handle max_stops in request
+class Response:
+    """Wrapper class to provide requests-like interface for aiohttp Response"""
 
-    r = requests.get(
-        "https://www.google.com/travel/flights",
-        params=params,
-        headers={"user-agent": ua, "accept-language": "en"},
-        **kwargs,
+    def __init__(self, aiohttp_response: aiohttp.ClientResponse, text: str):
+        self._response = aiohttp_response
+        self._text = text
+
+    @property
+    def content(self) -> bytes:
+        return self._text.encode("utf-8")
+
+    @property
+    def cookies(self) -> Dict[str, str]:
+        return {k: v.value for k, v in self._response.cookies.items()}
+
+    @property
+    def headers(self) -> Dict[str, str]:
+        return dict(self._response.headers)
+
+    @property
+    def status_code(self) -> int:
+        return self._response.status
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @property
+    def url(self) -> str:
+        return str(self._response.url)
+
+    def raise_for_status(self) -> None:
+        """Raises an HTTPError for bad responses (4xx, 5xx)"""
+        if self.status_code >= 400:
+            raise Exception(
+                f"HTTP {self.status_code} Error for url: {self.url}\n"
+                f"Response: {self.text[:1000]}"
+            )
+
+
+async def make_request_with_retry(
+    session: aiohttp.ClientSession,
+    request_url: str,
+    request_params: Dict[str, str],
+    cookies: Dict[str, str],
+    max_retries: int = 3,
+    initial_delay: float = 5.0,
+) -> Response:
+    """Make request with retry mechanism"""
+    last_error = None
+    delay = initial_delay
+
+    # Configure compression
+    compression = aiohttp.ClientSession(
+        headers=random.choice(BROWSER_HEADERS),
+        cookies=cookies,
+        timeout=aiohttp.ClientTimeout(total=30),
     )
-    r.raise_for_status()
-    return r
 
+    for attempt in range(max_retries):
+        try:
+            async with compression as session:
+                async with session.get(
+                    request_url,
+                    params=request_params,
+                ) as response:
+                    text = await response.text()
+                    wrapped_response = Response(response, text)
+                    wrapped_response.raise_for_status()
 
-def parse_response(
-    r: requests.Response, *, dangerously_allow_looping_last_item: bool = False
-) -> Result:
-    class _blank:
-        def text(self, *_, **__):
-            return ""
+                    logger.info(
+                        f"response: {wrapped_response.url} {wrapped_response.status_code} {len(wrapped_response.text)}"
+                    )
 
-        def iter(self):
-            return []
+                    # Add delay between requests
+                    await asyncio.sleep(delay)
 
-    blank = _blank()
+                    return wrapped_response
 
-    def safe(n: Optional[LexborNode]):
-        return n or blank
-
-    parser = LexborHTMLParser(r.text)
-    flights = []
-
-    for i, fl in enumerate(parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')):
-        is_best_flight = i == 0
-
-        for item in fl.css("ul.Rk10dc li")[
-            : (None if dangerously_allow_looping_last_item or i == 0 else -1)
-        ]:
-            # Flight name
-            name = safe(item.css_first("div.sSHqwe.tPgKwe.ogfYpf span")).text(
-                strip=True
+        except Exception as e:
+            last_error = e
+            logger.warning(
+                f"Request failed (attempt {attempt + 1}/{max_retries}): {str(e)}"
             )
 
-            # Get departure & arrival time
-            dp_ar_node = item.css("span.mv1WYe div")
-            try:
-                departure_time = dp_ar_node[0].text(strip=True)
-                arrival_time = dp_ar_node[1].text(strip=True)
-            except IndexError:
-                # sometimes this is not present
-                departure_time = ""
-                arrival_time = ""
+            # Exponential backoff with jitter
+            delay = min(initial_delay * (2**attempt) + random.uniform(0, 1), 30.0)
+            await asyncio.sleep(delay)
 
-            # Get arrival time ahead
-            time_ahead = safe(item.css_first("span.bOzv6")).text()
-
-            # Get duration
-            duration = safe(item.css_first("li div.Ak5kof div")).text()
-
-            # Get flight stops
-            stops = safe(item.css_first(".BbR8Ec .ogfYpf")).text()
-
-            # Get delay
-            delay = safe(item.css_first(".GsCCve")).text() or None
-
-            # Get prices
-            price = safe(item.css_first(".YMlIz.FpEdX")).text() or "0"
-
-            # Stops formatting
-            try:
-                stops_fmt = 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0])
-            except ValueError:
-                stops_fmt = "Unknown"
-
-            flights.append(
-                {
-                    "is_best": is_best_flight,
-                    "name": name,
-                    "departure": " ".join(departure_time.split()),
-                    "arrival": " ".join(arrival_time.split()),
-                    "arrival_time_ahead": time_ahead,
-                    "duration": duration,
-                    "stops": stops_fmt,
-                    "delay": delay,
-                    "price": price.replace(",", ""),
-                }
-            )
-
-    # Get current price
-    current_price = safe(parser.css_first("span.gOatQ")).text()
-
-    return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
+    raise last_error or Exception("All retry attempts failed")
 
 
-def get_flights(
+async def get_flights(
     tfs: TFSData,
     *,
+    max_stops: Optional[int] = None,
     currency: Optional[str] = None,
     language: Optional[str] = None,
-    cookies: Optional[dict] = None,
     inject_eu_cookies: bool = False,
-    dangerously_allow_looping_last_item: bool = False,
-    attempted: bool = False,
     **kwargs: Any,
 ) -> Result:
-    if inject_eu_cookies and cookies:
-        # merge the given dict and the required eu cookies dict
-        # this will override given cookies with the listed EU ones
-        cookies = cookies | eu_cookies
-    elif inject_eu_cookies:
-        cookies = eu_cookies
-    rs = request_flights(tfs, currency=currency, language=language, cookies=cookies, **kwargs)
-    results = parse_response(
-        rs, dangerously_allow_looping_last_item=dangerously_allow_looping_last_item
-    )
+    """
+    Get flights from Google Flights.
+    This is an async version of the function that uses aiohttp.
+    """
+    # Ensure all parameters are properly encoded strings
+    params = {
+        "tfs": tfs.as_b64().decode("utf-8"),
+        "hl": language or "en",
+        "tfu": "EgQIABABIgA",  # show all flights and prices condition
+    }
 
-    if not results.flights:
-        if not attempted:
-            return get_flights(
-                tfs,
-                cookies=cookies,
-                inject_eu_cookies=inject_eu_cookies,
-                dangerously_allow_looping_last_item=dangerously_allow_looping_last_item,
-                attempted=True,
-                **kwargs,
-            )
+    # Add currency if specified
+    if currency:
+        params["curr"] = currency
 
-        raise RuntimeError(
-            "No flights found. (preflight checked)\n"
-            "Possible reasons:\n"
-            "- Invalid query (e.g., date is in the past or cannot be booked)\n"
-            "- Invalid airport\n"
-            "- Blocked by EU consent form.  Try enabling --inject_eu_cookies"
+    # Add EU cookies if requested
+    cookies = eu_cookies if inject_eu_cookies else {}
+
+    # Create aiohttp session with retry logic
+    async with aiohttp.ClientSession() as session:
+        response = await make_request_with_retry(
+            session,
+            "https://www.google.com/travel/flights",
+            params,
+            cookies,
         )
 
-    return results
+        # Parse HTML response
+        parser = LexborHTMLParser(response.text)
+        return Result.from_html(parser)

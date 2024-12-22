@@ -2,3 +2,4 @@
 /main.py
 .ruff/
 .idea
+.venv/

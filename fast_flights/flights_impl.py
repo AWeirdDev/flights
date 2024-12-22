@@ -1,15 +1,18 @@
 """Typed implementation of flights_pb2.py"""
 
 import base64
-from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Union
 
 from . import flights_pb2 as PB
 from ._generated_enum import Airport
+from .types import Passengers
 
 if TYPE_CHECKING:
     PB: Any
 
 
+@dataclass
 class FlightData:
     """Represents flight data.
 
@@ -60,58 +63,18 @@ class FlightData:
         )
 
 
-class Passengers:
-    def __init__(
-        self,
-        *,
-        adults: int = 0,
-        children: int = 0,
-        infants_in_seat: int = 0,
-        infants_on_lap: int = 0,
-    ):
-        assert (
-            sum((adults, children, infants_in_seat, infants_on_lap)) <= 9
-        ), "Too many passengers (> 9)"
-        assert (
-            infants_on_lap <= adults
-        ), "You must have at least one adult per infant on lap"
-
-        self.pb = []
-        self.pb += [PB.Passenger.ADULT for _ in range(adults)]
-        self.pb += [PB.Passenger.CHILD for _ in range(children)]
-        self.pb += [PB.Passenger.INFANT_IN_SEAT for _ in range(infants_in_seat)]
-        self.pb += [PB.Passenger.INFANT_ON_LAP for _ in range(infants_on_lap)]
-
-        self._data = (adults, children, infants_in_seat, infants_on_lap)
-
-    def attach(self, info: PB.Info) -> None:  # type: ignore
-        for p in self.pb:
-            info.passengers.append(p)
-
-    def __repr__(self) -> str:
-        return f"Passengers({self._data})"
-
-
+@dataclass
 class TFSData:
     """``?tfs=`` data. (internal)
 
     Use `TFSData.from_interface` instead.
     """
 
-    def __init__(
-        self,
-        *,
-        flight_data: List[FlightData],
-        seat: PB.Seat,  # type: ignore
-        trip: PB.Trip,  # type: ignore
-        passengers: Passengers,
-        max_stops: Optional[int] = None,  # Add max_stops to the constructor
-    ):
-        self.flight_data = flight_data
-        self.seat = seat
-        self.trip = trip
-        self.passengers = passengers
-        self.max_stops = max_stops  # Store max_stops
+    flight_data: List[FlightData]
+    trip: int  # Use int for protobuf enum values
+    seat: int  # Use int for protobuf enum values
+    passengers: Passengers
+    max_stops: Optional[int] = None
 
     def pb(self) -> PB.Info:  # type: ignore
         info = PB.Info()
@@ -143,8 +106,8 @@ class TFSData:
         trip: Literal["round-trip", "one-way", "multi-city"],
         passengers: Passengers,
         seat: Literal["economy", "premium-economy", "business", "first"],
-        max_stops: Optional[int] = None,  # Add max_stops to the method signature
-    ):
+        max_stops: Optional[int] = None,
+    ) -> "TFSData":
         """Use ``?tfs=`` from an interface.
 
         Args:
@@ -155,15 +118,15 @@ class TFSData:
             max_stops (int, optional): Maximum number of stops.
         """
         trip_t = {
-            "round-trip": PB.Trip.ROUND_TRIP,
-            "one-way": PB.Trip.ONE_WAY,
-            "multi-city": PB.Trip.MULTI_CITY,
+            "round-trip": 1,  # ROUND_TRIP
+            "one-way": 0,  # ONE_WAY
+            "multi-city": 2,  # MULTI_CITY
         }[trip]
         seat_t = {
-            "economy": PB.Seat.ECONOMY,
-            "premium-economy": PB.Seat.PREMIUM_ECONOMY,
-            "business": PB.Seat.BUSINESS,
-            "first": PB.Seat.FIRST,
+            "economy": 0,  # ECONOMY
+            "premium-economy": 1,  # PREMIUM_ECONOMY
+            "business": 2,  # BUSINESS
+            "first": 3,  # FIRST
         }[seat]
 
         return TFSData(
@@ -171,9 +134,40 @@ class TFSData:
             seat=seat_t,
             trip=trip_t,
             passengers=passengers,
-            max_stops=max_stops  # Pass max_stops into TFSData
+            max_stops=max_stops,
         )
 
     def __repr__(self) -> str:
-        return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+        return (
+            f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+        )
 
+
+def create_filter(
+    flight_data: List[FlightData],
+    trip: Literal["round-trip", "one-way", "multi-city"],
+    seat: Literal["economy", "premium-economy", "business", "first"],
+    passengers: Passengers,
+    max_stops: Optional[int] = None,
+) -> TFSData:
+    """Create a filter for flight search"""
+    # Convert string values to proper enum values
+    trip_t = {
+        "round-trip": 1,  # ROUND_TRIP
+        "one-way": 0,  # ONE_WAY
+        "multi-city": 2,  # MULTI_CITY
+    }[trip]
+    seat_t = {
+        "economy": 0,  # ECONOMY
+        "premium-economy": 1,  # PREMIUM_ECONOMY
+        "business": 2,  # BUSINESS
+        "first": 3,  # FIRST
+    }[seat]
+
+    return TFSData(
+        flight_data=flight_data,
+        trip=trip_t,
+        seat=seat_t,
+        passengers=passengers,
+        max_stops=max_stops,
+    )

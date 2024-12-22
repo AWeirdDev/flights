@@ -1,0 +1,96 @@
+# Saturn. Document processing platform
+
+Every time you choose to apply a rule(s), explicitly state the rule(s) in the output. You can abbreviate the rule description to a single word or phrase.
+
+## Project Context
+A Python-based Google Flights scraper that uses Protocol Buffers for data serialization.
+The package provides a fast and strongly-typed way to access Google Flights data by:
+- Generating Base64-encoded Protobuf strings for the tfs query parameter
+- Parsing HTML content to extract flight information
+- Providing strongly-typed interfaces for flight data handling
+
+Key Features:
+- Protocol Buffer-based data serialization
+- Airport code enum support with autocompletion
+- Support for multiple trip types (one-way, round-trip)
+- Passenger configuration (adults, children, infants)
+- Seat class selection (economy, premium-economy, business, first)
+- Stop limit configuration
+- Price trend indicators (low/typical/high)
+
+Technical Notes:
+- Uses Base64-encoded Protobuf strings for query parameters
+- HTML parsing for data extraction
+- Supports preflight requests for cold starts
+
+
+## Code Style and Structure
+- For backend, use Object-Oriented Programming patterns;
+- Prefer iteration and modularization over code duplication;
+- Use asyncio for asynchronous operations;
+- The asyncio.get_event_loop() method is deprecated in Python 3.10+ when called from within a coroutine. Using this method in search_flight_combination may lead to runtime warnings or unexpected behavior.
+- Use Python 3.12 type hints;
+- Use deep methods and classes for complex logic instead of many small functions;
+- Structure repository files as follows:
+```
+fast-flights/
+├── .gitignore
+├── LICENSE
+├── README.md
+├── pyproject.toml
+├── setup.py
+├── notebooks/
+│   └── 00_flights.ipynb
+└── fast_flights/
+    ├── __init__.py
+    ├── schema.py
+    ├── flights.proto
+    ├── cookies.proto
+    ├── flights_pb2.py
+    ├── flights_impl.py
+    ├── _generated_enum.py
+    └── generate_enums.py
+
+```
+
+
+Backend:
+- Python
+- FastAPI
+- SQLAlchemy
+- PostgresSQL
+
+
+## Error Handling
+- Implement proper error boundaries
+- Log errors appropriately for debugging
+- Provide user-friendly error messages
+- Handle network failures gracefully
+
+## Testing
+- Write unit tests for utilities and components
+- Implement E2E tests for critical flows
+- Test across different Chrome versions
+- Test memory usage and performance
+
+## Security
+- Implement Content Security Policy
+- Sanitize user inputs
+- Handle sensitive data properly
+- Implement proper CORS handling
+
+
+Rules:
+- Use lowercase for commit messages
+- Keep the summary line concise
+- Include description for non-obvious changes
+- Reference issue numbers when applicable
+
+## Documentation
+- Maintain clear README with setup instructions
+- Document API interactions and data flows
+- Keep manifest.json well-documented
+- Don't include comments unless it's for complex logic
+- Document permission requirements
+
+
