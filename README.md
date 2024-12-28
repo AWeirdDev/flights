@@ -1,6 +1,4 @@
-> ~~I'm looking for maintainers.~~ Nevermind, a bot would work.
->
-> **Further development has been moved to the `v2` branch.**
+> Apparently, it's always a better approach to interact with the Internal Google APIs. I'm working on that, and I'll deliver the results soon if my experimental project works out well.
 
 <br /><br />
 <div align="center">
