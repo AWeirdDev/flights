@@ -25,6 +25,16 @@ theme:
 plugins:
   - search
   - offline
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh-TW
+          name: 繁體中文
+          build: true
 extra:
   generator: false
   social:
