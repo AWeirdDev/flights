@@ -1,52 +1,79 @@
-from typing import Any, Optional
+from typing import List, Literal, Optional
 
-import requests
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from .flights_impl import TFSData
 from .schema import Flight, Result
-
-ua = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/123.0.0.0 Safari/537.36 OPR/109.0.0.0"
-)
-
-eu_cookies = {
-    "CONSENT": "PENDING+987",
-    "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg"
-}
+from .flights_impl import FlightData, Passengers
+from .filter import TFSData
+from .fallback_playwright import fallback_playwright_fetch
+from .primp import Client, Response
 
 
-def request_flights(
-    tfs: TFSData,
+def fetch(params: dict) -> Response:
+    client = Client(impersonate="chrome_126", verify=False)
+    res = client.get("https://www.google.com/travel/flights", params=params)
+    assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
+    return res
+
+
+def get_flights_from_filter(
+    filter: TFSData,
+    currency: str = "",
     *,
-    max_stops: Optional[int] = None,  # Optionally pass max_stops if needed
-    currency: Optional[str] = None,
-    language: Optional[str],
-    **kwargs: Any,
-) -> requests.Response:
-    params = {
-        "tfs": tfs.as_b64(),
-        "hl": language,
-        "tfu": "EgQIABABIgA",  # show all flights and prices condition
-        "curr": currency,
-    }
-    if max_stops is not None:
-        params["max_stops"] = max_stops  # Handle max_stops in request
+    mode: Literal["common", "fallback", "force-fallback"] = "common",
+) -> Result:
+    data = filter.as_b64()
 
-    r = requests.get(
-        "https://www.google.com/travel/flights",
-        params=params,
-        headers={"user-agent": ua, "accept-language": "en"},
-        **kwargs,
+    params = {
+        "tfs": data.decode("utf-8"),
+        "hl": "en",
+        "tfu": "EgQIABABIgA",
+        "currency": currency,
+    }
+
+    if mode in {"common", "fallback"}:
+        try:
+            res = fetch(params)
+        except AssertionError as e:
+            if mode == "fallback":
+                res = fallback_playwright_fetch(params)
+            else:
+                raise e
+
+    else:
+        res = fallback_playwright_fetch(params)
+
+    try:
+        return parse_response(res)
+    except RuntimeError as e:
+        if mode == "fallback":
+            return get_flights_from_filter(filter, mode="force-fallback")
+        raise e
+
+
+def get_flights(
+    *,
+    flight_data: List[FlightData],
+    trip: Literal["round-trip", "one-way", "multi-city"],
+    passengers: Passengers,
+    seat: Literal["economy", "premium-economy", "business", "first"],
+    fetch_mode: Literal["common", "fallback", "force-fallback"] = "common",
+    max_stops: Optional[int] = None,
+) -> Result:
+    return get_flights_from_filter(
+        TFSData.from_interface(
+            flight_data=flight_data,
+            trip=trip,
+            passengers=passengers,
+            seat=seat,
+            max_stops=max_stops,
+        ),
+        mode=fetch_mode,
     )
-    r.raise_for_status()
-    return r
 
 
 def parse_response(
-    r: requests.Response, *, dangerously_allow_looping_last_item: bool = False
+    r: Response, *, dangerously_allow_looping_last_item: bool = False
 ) -> Result:
     class _blank:
         def text(self, *_, **__):
@@ -119,51 +146,8 @@ def parse_response(
                 }
             )
 
-    # Get current price
     current_price = safe(parser.css_first("span.gOatQ")).text()
+    if not flights:
+        raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
 
     return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
-
-
-def get_flights(
-    tfs: TFSData,
-    *,
-    currency: Optional[str] = None,
-    language: Optional[str] = None,
-    cookies: Optional[dict] = None,
-    inject_eu_cookies: bool = False,
-    dangerously_allow_looping_last_item: bool = False,
-    attempted: bool = False,
-    **kwargs: Any,
-) -> Result:
-    if inject_eu_cookies and cookies:
-        # merge the given dict and the required eu cookies dict
-        # this will override given cookies with the listed EU ones
-        cookies = cookies | eu_cookies
-    elif inject_eu_cookies:
-        cookies = eu_cookies
-    rs = request_flights(tfs, currency=currency, language=language, cookies=cookies, **kwargs)
-    results = parse_response(
-        rs, dangerously_allow_looping_last_item=dangerously_allow_looping_last_item
-    )
-
-    if not results.flights:
-        if not attempted:
-            return get_flights(
-                tfs,
-                cookies=cookies,
-                inject_eu_cookies=inject_eu_cookies,
-                dangerously_allow_looping_last_item=dangerously_allow_looping_last_item,
-                attempted=True,
-                **kwargs,
-            )
-
-        raise RuntimeError(
-            "No flights found. (preflight checked)\n"
-            "Possible reasons:\n"
-            "- Invalid query (e.g., date is in the past or cannot be booked)\n"
-            "- Invalid airport\n"
-            "- Blocked by EU consent form.  Try enabling --inject_eu_cookies"
-        )
-
-    return results

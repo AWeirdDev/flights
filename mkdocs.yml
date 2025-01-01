@@ -1,0 +1,49 @@
+site_name: Flights
+site_url: https://github.com/AWeirdDev/flights
+repo_url: https://github.com/AWeirdDev/flights
+theme:
+  name: material
+  icon:
+    logo: material/airplane
+  font:
+    text: Inter
+    code: Roboto Mono
+    heading: Inter Tight
+  palette: 
+    - scheme: default
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    - scheme: slate
+      media: "(prefers-color-scheme: dark)"
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.annotate
+plugins:
+  - search
+  - offline
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/AWeirdDev
+      name: AWeirdDev on GitHub
+  alternate:
+    - name: English
+      link: /
+      lang: en
+    - name: 繁體中文
+      link: /zh-tw/
+      lang: zh-TW
+copyright: "&copy; 2024 AWeirdDev" 
+markdown_extensions:
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences

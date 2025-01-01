@@ -7,7 +7,7 @@ def create_filter(
     trip: Literal["round-trip", "one-way", "multi-city"],
     passengers: Passengers,
     seat: Literal["economy", "premium-economy", "business", "first"],
-    max_stops: Optional[int] = None,  # New argument
+    max_stops: Optional[int] = None,
 ) -> TFSData:
     """Create a filter. (``?tfs=``)
 
