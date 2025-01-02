@@ -16,6 +16,7 @@ get_fights_from_filter(
 ```
 
 There are a few modes for fallbacks:
+
 - `common` – This uses the standard scraping process.
 - `fallback` – Enables a fallback support if the standard process fails.
 - `force-fallback` – Forces using the fallback.
