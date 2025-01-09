@@ -28,7 +28,7 @@ def get_flights_from_filter(
         "tfs": data.decode("utf-8"),
         "hl": "en",
         "tfu": "EgQIABABIgA",
-        "currency": currency,
+        "curr": currency,
     }
 
     if mode in {"common", "fallback"}:
