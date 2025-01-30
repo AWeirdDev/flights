@@ -68,11 +68,14 @@ Airport.TAIPEI
               ╰─────────────────────────────────╯
 ```
 
+## What's new
+- `v2.0` – New (much more succinct) API, fallback support for Playwright serverless functions, and [documentation](https://aweirddev.github.io/flights)!
+
 ## Cookies & consent
 The EU region is a bit tricky to solve for now, but the fallback support should be able to handle it.
 
-## What's new
-- `v2.0` – New (much more succinct) API, fallback support for Playwright serverless functions, and [documentation](https://aweirddev.github.io/flights)!
+## Contributing
+Contributing is welcomed! I probably won't work on this project unless there's a need for a major update, but boy howdy do I love pull requests.
 
 ***
 
@@ -170,14 +173,8 @@ I have no idea what I wrote but... it worked! And here it is, `fast-flights`.
 
 ***
 
-## Contributing
+<div align="center">
 
-Yes, please: [github.com/AWeirdDev/flights](https://github.com/AWeirdDev/flights)
-
-<br />
-
-<div align="center>
-
-(c) 2024 AWeirdDev
+(c) 2024-2025 AWeirdDev, and other awesome people
 
 </div>
