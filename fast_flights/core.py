@@ -21,7 +21,7 @@ def get_flights_from_filter(
     currency: str = "",
     *,
     mode: Literal["common", "fallback", "force-fallback"] = "common",
-    max_flights: Optional[int] = None
+    max_flights: Optional[int] = 0
 ) -> Result:
     data = filter.as_b64()
 
@@ -60,7 +60,7 @@ def get_flights(
     seat: Literal["economy", "premium-economy", "business", "first"],
     fetch_mode: Literal["common", "fallback", "force-fallback"] = "common",
     max_stops: Optional[int] = None,
-    max_flights: Optional[int] = None
+    max_flights: Optional[int] = 0
 ) -> Result:
     return get_flights_from_filter(
         TFSData.from_interface(
@@ -76,7 +76,7 @@ def get_flights(
 
 
 def parse_response(
-    r: Response, *, dangerously_allow_looping_last_item: bool = False, max_flights: Optional[int] = None
+    r: Response, *, dangerously_allow_looping_last_item: bool = False, max_flights: Optional[int] = 0
 ) -> Result:
     class _blank:
         def text(self, *_, **__):
@@ -94,7 +94,7 @@ def parse_response(
     flights = []
 
     for i, fl in enumerate(parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')):
-        if len(flights) > max_flights:
+        if max_flights != 0 and len(flights) > max_flights:
                 break
         is_best_flight = i == 0
 
@@ -150,7 +150,7 @@ def parse_response(
                     "price": price.replace(",", ""),
                 }
             )
-            if len(flights) > max_flights:
+            if max_flights != 0 and len(flights) > max_flights:
                 break
 
     current_price = safe(parser.css_first("span.gOatQ")).text()
