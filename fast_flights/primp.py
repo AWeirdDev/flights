@@ -1,4 +1,4 @@
-from primp.primp import RClient as Client  # type: ignore
+from primp import Client  # type: ignore
 
 
 class Response: ...
