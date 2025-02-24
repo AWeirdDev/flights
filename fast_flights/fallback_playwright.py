@@ -26,8 +26,8 @@ asyncio.run(main())
 """
 
 
-def fallback_playwright_fetch(params: dict) -> Any:
-    client = Client(impersonate="chrome_100", verify=False)
+def fallback_playwright_fetch(params: dict, timeout: int = 30) -> Any:
+    client = Client(impersonate="chrome_100", verify=False, timeout=timeout)
 
     res = client.post(
         "https://try.playwright.tech/service/control/run",
