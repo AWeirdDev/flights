@@ -141,3 +141,5 @@ Feel free to contribute! Though I won't be online that often, I'll try my best t
 - @PTruscott made their first contribution in #19
 - @artiom-matvei made their first contribution in #20
 - @esalonico fixed v2.0 currency issues in #25
+- @NickJLange helped add a LICENSE file in #38
+- @Lim0H (#39) and @andreaiorio (#41) fixed `primp` client issues.
