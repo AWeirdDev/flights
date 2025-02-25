@@ -9,8 +9,9 @@ from .fallback_playwright import fallback_playwright_fetch
 from .primp import Client, Response
 
 
-def fetch(params: dict) -> Response:
-    client = Client(impersonate="chrome_126", verify=False)
+def fetch(params: dict, timeout: int = 30) -> Response:
+    timeout = params.get("timeout", timeout)
+    client = Client(impersonate="chrome_126", verify=False, timeout=timeout)
     res = client.get("https://www.google.com/travel/flights", params=params)
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res
@@ -21,6 +22,7 @@ def get_flights_from_filter(
     currency: str = "",
     *,
     mode: Literal["common", "fallback", "force-fallback"] = "common",
+    timeout: int = 30,
 ) -> Result:
     data = filter.as_b64()
 
@@ -33,21 +35,20 @@ def get_flights_from_filter(
 
     if mode in {"common", "fallback"}:
         try:
-            res = fetch(params)
+            res = fetch(params, timeout)
         except AssertionError as e:
             if mode == "fallback":
-                res = fallback_playwright_fetch(params)
+                res = fallback_playwright_fetch(params, timeout)
             else:
                 raise e
-
     else:
-        res = fallback_playwright_fetch(params)
+        res = fallback_playwright_fetch(params, timeout)
 
     try:
         return parse_response(res)
     except RuntimeError as e:
         if mode == "fallback":
-            return get_flights_from_filter(filter, mode="force-fallback")
+            return get_flights_from_filter(filter, mode="force-fallback", timeout=timeout)
         raise e
 
 
@@ -59,6 +60,7 @@ def get_flights(
     seat: Literal["economy", "premium-economy", "business", "first"],
     fetch_mode: Literal["common", "fallback", "force-fallback"] = "common",
     max_stops: Optional[int] = None,
+    timeout: Optional[int] = 30,
 ) -> Result:
     return get_flights_from_filter(
         TFSData.from_interface(
@@ -69,6 +71,7 @@ def get_flights(
             max_stops=max_stops,
         ),
         mode=fetch_mode,
+        timeout=timeout,
     )
 
 
