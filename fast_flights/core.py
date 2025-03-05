@@ -62,7 +62,7 @@ def get_flights(
     trip: Literal["round-trip", "one-way", "multi-city"],
     passengers: Passengers,
     seat: Literal["economy", "premium-economy", "business", "first"],
-    fetch_mode: Literal["common", "fallback", "force-fallback"] = "common",
+    fetch_mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
     max_stops: Optional[int] = None,
 ) -> Result:
     return get_flights_from_filter(
