@@ -20,7 +20,7 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback"] = "common",
+    mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
 ) -> Result:
     data = filter.as_b64()
 
@@ -39,6 +39,11 @@ def get_flights_from_filter(
                 res = fallback_playwright_fetch(params)
             else:
                 raise e
+
+    elif mode == "local":
+        from .local_playwright import local_playwright_fetch
+
+        res = local_playwright_fetch(params)
 
     else:
         res = fallback_playwright_fetch(params)

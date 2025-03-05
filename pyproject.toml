@@ -24,6 +24,11 @@ dependencies = [
   "selectolax"
 ]
 
+[project.optional-dependencies]
+local = [
+    "playwright"
+]
+
 [project.urls]
 "Source" = "https://github.com/AWeirdDev/flights"
 "Issues" = "https://github.com/AWeirdDev/flights/issues"
