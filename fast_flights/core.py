@@ -20,7 +20,7 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback"] = "common",
+    mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
 ) -> Result:
     data = filter.as_b64()
 
@@ -40,6 +40,11 @@ def get_flights_from_filter(
             else:
                 raise e
 
+    elif mode == "local":
+        from .local_playwright import local_playwright_fetch
+
+        res = local_playwright_fetch(params)
+
     else:
         res = fallback_playwright_fetch(params)
 
@@ -57,7 +62,7 @@ def get_flights(
     trip: Literal["round-trip", "one-way", "multi-city"],
     passengers: Passengers,
     seat: Literal["economy", "premium-economy", "business", "first"],
-    fetch_mode: Literal["common", "fallback", "force-fallback"] = "common",
+    fetch_mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
     max_stops: Optional[int] = None,
 ) -> Result:
     return get_flights_from_filter(
