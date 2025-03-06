@@ -59,6 +59,7 @@ def get_flights(
     seat: Literal["economy", "premium-economy", "business", "first"],
     fetch_mode: Literal["common", "fallback", "force-fallback"] = "common",
     max_stops: Optional[int] = None,
+    currency: str = "EUR",
 ) -> Result:
     return get_flights_from_filter(
         TFSData.from_interface(
@@ -68,6 +69,7 @@ def get_flights(
             seat=seat,
             max_stops=max_stops,
         ),
+        currency=currency,
         mode=fetch_mode,
     )
 
@@ -128,7 +130,8 @@ def parse_response(
 
             # Stops formatting
             try:
-                stops_fmt = 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0])
+                stops_fmt = 0 if stops == "Nonstop" else int(
+                    stops.split(" ", 1)[0])
             except ValueError:
                 stops_fmt = "Unknown"
 
@@ -150,4 +153,5 @@ def parse_response(
     if not flights:
         raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
 
-    return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
+    # type: ignore
+    return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])
