@@ -7,7 +7,7 @@
 
 The fast and strongly-typed Google Flights scraper (API) implemented in Python. Based on Base64-encoded Protobuf string.
 
-[**Documentation**](https://aweirddev.github.io/flights) • [Issues](https://github.com/AWeirdDev/flights/issues) • [Discussions](https://github.com/AWeirdDev/flights/discussions)
+[**Documentation**](https://aweirddev.github.io/flights) • [Issues](https://github.com/AWeirdDev/flights/issues) • [PyPi](https://pypi.org/project/fast-flights)
 
 ```haskell
 $ pip install fast-flights
