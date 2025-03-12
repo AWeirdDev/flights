@@ -17,13 +17,15 @@ class FlightData:
         date (str): Date.
         from_airport (str): Departure (airport). Where from?
         to_airport (str): Arrival (airport). Where to?
+        airlines (list(str), optional): A list of airlines. Default is None.
         max_stops (int, optional): Maximum number of stops. Default is None.
     """
 
-    __slots__ = ("date", "from_airport", "to_airport", "max_stops")
+    __slots__ = ("date", "from_airport", "to_airport", "airlines", "max_stops")
     date: str
     from_airport: str
     to_airport: str
+    airlines: Optional[List[str]]
     max_stops: Optional[int]
 
     def __init__(
@@ -32,22 +34,28 @@ class FlightData:
         date: str,
         from_airport: Union[Airport, str],
         to_airport: Union[Airport, str],
+        airlines: Optional[List[str]] = None,
         max_stops: Optional[int] = None,
     ):
         self.date = date
         self.from_airport = (
             from_airport.value if isinstance(from_airport, Airport) else from_airport
-        )
+        ).split(',')
         self.to_airport = (
             to_airport.value if isinstance(to_airport, Airport) else to_airport
-        )
+        ).split(',')
+        self.airlines = airlines
         self.max_stops = max_stops
 
     def attach(self, info: PB.Info) -> None:  # type: ignore
         data = info.data.add()
         data.date = self.date
-        data.from_flight.airport = self.from_airport
-        data.to_flight.airport = self.to_airport
+        for from_airport in self.from_airport:
+            data.from_flight.add().airport = from_airport
+        for to_airport in self.to_airport:
+            data.to_flight.add().airport = to_airport
+        if self.airlines is not None:
+            data.airlines[:] = self.airlines
         if self.max_stops is not None:
             data.max_stops = self.max_stops
 
