@@ -7,8 +7,8 @@ message Airport {
 message FlightData {
   string date = 2;
   repeated string airlines = 6;
-  Airport from_flight = 13;
-  Airport to_flight = 14;
+  repeated Airport from_flight = 13;
+  repeated Airport to_flight = 14;
   optional int32 max_stops = 5;
 }
 
