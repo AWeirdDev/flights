@@ -14,6 +14,8 @@ class Result:
 class Flight:
     is_best: bool
     name: str
+    from_airport: str
+    to_airport: str
     departure: str
     arrival: str
     arrival_time_ahead: str

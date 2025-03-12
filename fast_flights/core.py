@@ -105,6 +105,14 @@ def parse_response(
             name = safe(item.css_first("div.sSHqwe.tPgKwe.ogfYpf span")).text(
                 strip=True
             )
+            # from_airport - to_airport
+            from_to_airport_node = item.css("span.PTuQse.sSHqwe.tPgKwe.ogfYpf div.QylvBf span span span")
+            try:
+                from_airport = from_to_airport_node[0].text(strip=True)
+                to_airport = from_to_airport_node[1].text(strip=True)
+            except IndexError:
+                from_airport = ""
+                to_airport = ""
 
             # Get departure & arrival time
             dp_ar_node = item.css("span.mv1WYe div")
@@ -141,6 +149,8 @@ def parse_response(
                 {
                     "is_best": is_best_flight,
                     "name": name,
+                    "from_airport": from_airport,
+                    "to_airport": to_airport,
                     "departure": " ".join(departure_time.split()),
                     "arrival": " ".join(arrival_time.split()),
                     "arrival_time_ahead": time_ahead,
