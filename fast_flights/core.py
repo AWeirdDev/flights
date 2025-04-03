@@ -1,13 +1,17 @@
-from typing import List, Literal, Optional
+import re
+import json
+from typing import List, Literal, Optional, Union
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from .schema import Flight, Result
+from .schema import Trip, Result, FlightsAPIResult
 from .flights_impl import FlightData, Passengers
 from .filter import TFSData
 from .fallback_playwright import fallback_playwright_fetch
 from .primp import Client, Response
 
+
+DataSource = Literal['html', 'js']
 
 def fetch(params: dict) -> Response:
     client = Client(impersonate="chrome_126", verify=False)
@@ -21,7 +25,8 @@ def get_flights_from_filter(
     currency: str = "",
     *,
     mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
-) -> Result:
+    data_source: DataSource = 'js',
+) -> Union[Result, FlightsAPIResult]:
     data = filter.as_b64()
 
     params = {
@@ -49,7 +54,7 @@ def get_flights_from_filter(
         res = fallback_playwright_fetch(params)
 
     try:
-        return parse_response(res)
+        return parse_response(res, data_source)
     except RuntimeError as e:
         if mode == "fallback":
             return get_flights_from_filter(filter, mode="force-fallback")
@@ -64,7 +69,7 @@ def get_flights(
     seat: Literal["economy", "premium-economy", "business", "first"],
     fetch_mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
     max_stops: Optional[int] = None,
-) -> Result:
+) -> Union[Result, FlightsAPIResult]:
     return get_flights_from_filter(
         TFSData.from_interface(
             flight_data=flight_data,
@@ -78,8 +83,11 @@ def get_flights(
 
 
 def parse_response(
-    r: Response, *, dangerously_allow_looping_last_item: bool = False
-) -> Result:
+    r: Response,
+    data_source: DataSource,
+    *,
+    dangerously_allow_looping_last_item: bool = False,
+) -> Union[Result, FlightsAPIResult]:
     class _blank:
         def text(self, *_, **__):
             return ""
@@ -93,6 +101,15 @@ def parse_response(
         return n or blank
 
     parser = LexborHTMLParser(r.text)
+
+    if data_source == 'js':
+        script = parser.css_first('script.ds\:1').text()
+
+        match = re.search(r'^.*?\{.*?data:(\[.*\]).*\}', script)
+        assert match, 'Malformed js data, cannot find script data'
+        data = json.loads(match.group(1))
+        return FlightsAPIResult.parse(data)
+
     flights = []
 
     for i, fl in enumerate(parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')):
@@ -155,4 +172,4 @@ def parse_response(
     if not flights:
         raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
 
-    return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
+    return Result(current_price=current_price, trips=[Trip(**fl) for fl in flights])  # type: ignore
