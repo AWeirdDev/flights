@@ -20,7 +20,7 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
   "primp",
-  "protobuf",
+  "protobuf>=5.27.0",
   "selectolax",
 ]
 
