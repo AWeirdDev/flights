@@ -40,3 +40,13 @@ message Info {
   repeated Passenger passengers = 8;
   Trip trip = 19;
 }
+
+message Price {
+  int32 price = 1;
+  string currency = 3;
+}
+
+message ItinerarySummary {
+  string flights = 2;
+  Price price = 3;
+}

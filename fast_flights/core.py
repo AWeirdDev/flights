@@ -1,10 +1,11 @@
 import re
 import json
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional, Union, overload
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
-from .schema import Trip, Result, FlightsAPIResult
+from .decoder import DecodedResult, ResultDecoder
+from .schema import Trip, Result
 from .flights_impl import FlightData, Passengers
 from .filter import TFSData
 from .fallback_playwright import fallback_playwright_fetch
@@ -19,14 +20,31 @@ def fetch(params: dict) -> Response:
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res
 
+@overload
+def get_flights_from_filter(
+    filter: TFSData,
+    currency: str = "",
+    *,
+    mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
+    data_source: Literal['js'] = ...,
+) -> Union[DecodedResult, None]: ...
+
+@overload
+def get_flights_from_filter(
+    filter: TFSData,
+    currency: str = "",
+    *,
+    mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
+    data_source: Literal['html'],
+) -> Result: ...
 
 def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
     mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
-    data_source: DataSource = 'js',
-) -> Union[Result, FlightsAPIResult]:
+    data_source: DataSource = 'html',
+) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
 
     params = {
@@ -69,7 +87,8 @@ def get_flights(
     seat: Literal["economy", "premium-economy", "business", "first"],
     fetch_mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
     max_stops: Optional[int] = None,
-) -> Union[Result, FlightsAPIResult]:
+    data_source: DataSource = 'html',
+) -> Union[Result, DecodedResult, None]:
     return get_flights_from_filter(
         TFSData.from_interface(
             flight_data=flight_data,
@@ -79,6 +98,7 @@ def get_flights(
             max_stops=max_stops,
         ),
         mode=fetch_mode,
+        data_source=data_source,
     )
 
 
@@ -87,7 +107,7 @@ def parse_response(
     data_source: DataSource,
     *,
     dangerously_allow_looping_last_item: bool = False,
-) -> Union[Result, FlightsAPIResult]:
+) -> Union[Result, DecodedResult, None]:
     class _blank:
         def text(self, *_, **__):
             return ""
@@ -103,12 +123,12 @@ def parse_response(
     parser = LexborHTMLParser(r.text)
 
     if data_source == 'js':
-        script = parser.css_first('script.ds\:1').text()
+        script = parser.css_first(r'script.ds\:1').text()
 
         match = re.search(r'^.*?\{.*?data:(\[.*\]).*\}', script)
         assert match, 'Malformed js data, cannot find script data'
         data = json.loads(match.group(1))
-        return FlightsAPIResult.parse(data)
+        return ResultDecoder.decode(data) if data is not None else None
 
     flights = []
 
