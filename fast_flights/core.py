@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Union, overload
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from .decoder import DecodedResult, ResultDecoder
-from .schema import Trip, Result
+from .schema import Flight, Result
 from .flights_impl import FlightData, Passengers
 from .filter import TFSData
 from .fallback_playwright import fallback_playwright_fetch
@@ -192,4 +192,4 @@ def parse_response(
     if not flights:
         raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
 
-    return Result(current_price=current_price, trips=[Trip(**fl) for fl in flights])  # type: ignore
+    return Result(current_price=current_price, trips=[Flight(**fl) for fl in flights])  # type: ignore
