@@ -21,6 +21,7 @@ class NLData(Sequence[NLBaseType]):
         it = self.data
         for index in decode_path:
             assert isinstance(it, list), f'Found non list type while trying to decode {decode_path}'
+            assert index < len(it), f'Trying to traverse to index out of range when decoding {decode_path}'
             it = it[index]
         return it
 
@@ -92,7 +93,7 @@ class Flight:
     arrival_time: Tuple[int, int]
     travel_time: int
     seat_pitch_short: str
-    seat_pitch_long: str
+    # seat_pitch_long: str
 
 @dataclass
 class Layover:
@@ -121,6 +122,9 @@ class Itinerary:
 
 @dataclass
 class DecodedResult:
+    # raw unparsed data
+    raw: list
+
     best: List[Itinerary]
     other: List[Itinerary]
 
@@ -153,9 +157,9 @@ class FlightDecoder(Decoder):
     DEPARTURE_DATE: DecoderKey[Tuple[int, int, int]] = DecoderKey([20])
     ARRIVAL_DATE: DecoderKey[Tuple[int, int, int]] = DecoderKey([21])
     AIRLINE: DecoderKey[AirlineCode] = DecoderKey([22, 0])
-    AIRLINE_NAME: DecoderKey[AirlineName] = DecoderKey([22, 0])
+    AIRLINE_NAME: DecoderKey[AirlineName] = DecoderKey([22, 3])
     FLIGHT_NUMBER: DecoderKey[str] = DecoderKey([22, 1])
-    SEAT_PITCH_LONG: DecoderKey[str] = DecoderKey([30])
+    # SEAT_PITCH_LONG: DecoderKey[str] = DecoderKey([30])
     CODESHARES: DecoderKey[List[Codeshare]] = DecoderKey([15], CodeshareDecoder.decode)
 
     @classmethod
@@ -214,4 +218,4 @@ class ResultDecoder(Decoder):
     @override
     def decode(cls, root: Union[list, NLData]) -> DecodedResult:
         assert isinstance(root, list), 'Root data must be list type'
-        return DecodedResult(**cls.decode_el(NLData(root)))
+        return DecodedResult(**cls.decode_el(NLData(root)), raw=root)
