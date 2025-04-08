@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Literal, Optional
 
+
 @dataclass
 class Result:
     current_price: Literal["low", "typical", "high"]
-    trips: List[Flight]
+    flights: List[Flight]
 
 
 @dataclass

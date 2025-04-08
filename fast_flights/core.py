@@ -192,4 +192,4 @@ def parse_response(
     if not flights:
         raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
 
-    return Result(current_price=current_price, trips=[Flight(**fl) for fl in flights])  # type: ignore
+    return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore

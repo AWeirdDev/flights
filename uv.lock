@@ -219,7 +219,7 @@ dev = [
 requires-dist = [
     { name = "playwright", marker = "extra == 'local'" },
     { name = "primp" },
-    { name = "protobuf" },
+    { name = "protobuf", specifier = ">=5.27.0" },
     { name = "selectolax" },
 ]
 
