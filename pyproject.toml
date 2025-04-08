@@ -20,8 +20,8 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
   "primp",
-  "protobuf",
-  "selectolax"
+  "protobuf>=5.27.0",
+  "selectolax",
 ]
 
 [project.optional-dependencies]
@@ -37,4 +37,13 @@ local = [
 [tool.setuptools]
 packages = [
     "fast_flights"
+]
+
+[tool.pyright]
+pythonVersion = '3.8'
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "pip>=25.0.1",
 ]
