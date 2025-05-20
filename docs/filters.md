@@ -20,11 +20,14 @@ data = FlightData(
     date="2025-01-01", 
     from_airport="TPE", 
     to_airport="MYJ", 
+    airlines=["DL", "AA", "STAR_ALLIANCE"], # optional
     max_stops=10  # optional
 )
 ```
 
 Note that for `round-trip` trips, you'll need to specify more than one `FlightData` object for the `flight_data` parameter.
+
+The values in `airlines` has to be a valid 2 letter IATA airline code, case insensitive. They can also be one of `SKYTEAM`, `STAR_ALLIANCE` or `ONEWORLD`. Note that the server side currently ignores the `airlines` parameter added to the `FlightData`s of all the flights which is not the first flight. In other words, if you have two `FlightData`s for a `round-trip` trip: JFK-MIA and MIA-JFK, and you add `airlines` parameter to both `FlightData`s, only the first `airlines` will be considered for the whole search. So technically `airlines` could be a better fit as a parameter for `TFSData` but adding to `FlightData` is the correct usage because if the backend changes and brings more flexibility to filter with different airlines for different flight segments in the future, which it should, this will come in handy.
 
 ## Trip
 Either one of:
