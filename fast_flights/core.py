@@ -160,7 +160,7 @@ def parse_response(
                 match = re.search(r'-([A-Z0-9]+)-(\d+)-\d{8}$', url)
                 if match:
                     airline_code = match.group(1)
-                    flight_number = match.group(2)
+                    flight_number = f"{airline_code} {match.group(2)}"
                 
                 # Extract full route from the URL
                 # Pattern: itinerary=JFK-LAX-F9-2503-20250801 (direct)
@@ -219,8 +219,9 @@ def parse_response(
                 if flight_number_node:
                     candidate = flight_number_node.text(strip=True)
                     # Simple heuristic: must contain both letters and numbers
-                    if re.search(r'[A-Z]{2,3}\d{2,4}', candidate):
-                        flight_number = candidate
+                    match = re.search(r'([A-Z]{2,3})(\d{2,4})', candidate)
+                    if match:
+                        flight_number = f"{match.group(1)} {match.group(2)}"
 
             # Get departure & arrival time
             dp_ar_node = item.css("span.mv1WYe div")
