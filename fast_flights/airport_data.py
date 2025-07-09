@@ -25,7 +25,7 @@ class AirportData:
         self._load_data()
     
     def _load_data(self):
-        csv_path = os.path.join(os.path.dirname(__file__), '..', 'enums', 'airports.csv')
+        csv_path = os.path.join(os.path.dirname(__file__), 'airports.csv')
         
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
