@@ -44,24 +44,31 @@ print("-" * 80)
 
 try:
     # Get flights using Bright Data mode
-    result = get_flights_from_filter(filter, mode="bright-data")
+    result = get_flights_from_filter(filter, mode="bright-data", data_source='html')
+
+    if not result:
+        print("No flights found. Please check the filter parameters or try again later.")
+        exit(0)
     
     print(f"Current price: {result.current_price}")
     print(f"Found {len(result.flights)} flights\n")
     
-    # Display flight results
+    # Display flight results with ALL schema fields
     for i, flight in enumerate(result.flights, 1):
         print(f"Flight {i}:")
-        print(f"  Airline: {flight.name}")
-        print(f"  Departure: {flight.departure}")
-        print(f"  Arrival: {flight.arrival}")
-        print(f"  Duration: {flight.duration}")
-        print(f"  Stops: {flight.stops}")
-        print(f"  Price: {flight.price}")
-        if flight.delay:
-            print(f"  Delay: {flight.delay}")
-        if flight.is_best:
-            print("  ⭐ Best flight")
+        print(f"  is_best: {flight.is_best}")
+        print(f"  name: {flight.name}")
+        print(f"  departure: {flight.departure}")
+        print(f"  arrival: {flight.arrival}")
+        print(f"  arrival_time_ahead: {flight.arrival_time_ahead}")
+        print(f"  duration: {flight.duration}")
+        print(f"  stops: {flight.stops}")
+        print(f"  delay: {flight.delay}")
+        print(f"  price: {flight.price}")
+        print(f"  flight_number: {flight.flight_number}")
+        print(f"  departure_airport: {flight.departure_airport}")
+        print(f"  arrival_airport: {flight.arrival_airport}")
+        print(f"  connecting_airports: {flight.connecting_airports}")
         print()
         
 except Exception as e:
