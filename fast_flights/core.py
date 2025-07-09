@@ -20,69 +20,95 @@ def extract_html_enrichments(parser: LexborHTMLParser, html_content: str) -> Lis
     """Extract additional flight data from HTML that's not available in JS."""
     enrichments = []
     
-    # Get flight items - try multiple selectors
-    flight_items = parser.css('ul.Rk10dc li')
-    if not flight_items:
-        flight_items = parser.css('div[jsname="IWWDBc"] li, div[jsname="YdtKid"] li')
+    # Use the same structure as the HTML parser - first get flight containers, then items within
+    flight_containers = parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')
     
-    for item in flight_items:
-        enrichment = {}
+    for container in flight_containers:
+        # Get flight items within this container
+        flight_items = container.css("ul.Rk10dc li")
         
-        # Extract emissions data - look for emissions elements within this flight item
-        emissions_elems = item.css('[aria-label*="emissions"], [aria-label*="CO2"], [aria-label*="carbon"]')
-        for emissions_elem in emissions_elems:
-            aria_label = emissions_elem.attributes.get('aria-label', '')
-            if 'emissions estimate' in aria_label.lower():
-                # Pattern: "Carbon emissions estimate: 502 kilograms. -22% emissions."
-                kg_match = re.search(r'(\d+)\s*kilogram', aria_label)
-                percent_match = re.search(r'([+-]?\d+)%\s*emissions', aria_label)
-                if kg_match or percent_match:
-                    enrichment['emissions'] = {}
-                    if kg_match:
-                        enrichment['emissions']['kg'] = int(kg_match.group(1))
-                    if percent_match:
-                        enrichment['emissions']['percentage'] = int(percent_match.group(1))
-                    break  # Found emissions for this flight
-        
-        # Extract operated by info from aria-label
-        aria_label = item.attributes.get('aria-label', '')
-        if aria_label:
-            operated_pattern = r'Operated by ([^.,]+)'
-            operated_matches = re.findall(operated_pattern, aria_label)
-            if operated_matches:
-                enrichment['operated_by'] = list(set(operated_matches))
-        
-        # Extract detailed aircraft info (this would need more specific selectors)
-        # For now, look in the aria-label for aircraft mentions
-        aircraft_pattern = r'(Boeing|Airbus|Embraer|Bombardier)\s+([A-Z0-9-]+)'
-        aircraft_matches = re.findall(aircraft_pattern, aria_label)
-        if aircraft_matches:
-            enrichment['aircraft_details'] = f"{aircraft_matches[0][0]} {aircraft_matches[0][1]}"
-        
-        # Extract terminal info from aria-label
-        terminal_pattern = r'Terminal\s+([A-Z0-9]+)'
-        terminal_matches = re.findall(terminal_pattern, aria_label)
-        if terminal_matches:
-            enrichment['terminal_info'] = {'terminals': terminal_matches}
-        
-        # Extract alliance info
-        alliance_pattern = r'(Star Alliance|oneworld|SkyTeam)'
-        alliance_match = re.search(alliance_pattern, aria_label)
-        if alliance_match:
-            enrichment['alliance'] = alliance_match.group(1)
-        
-        # Extract on-time performance if available
-        ontime_pattern = r'(\d+)%\s*on[\s-]?time'
-        ontime_match = re.search(ontime_pattern, aria_label, re.IGNORECASE)
-        if ontime_match:
-            enrichment['on_time_performance'] = int(ontime_match.group(1))
-        
-        # Extract flight URL for matching
-        url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
-        if url_elem:
-            enrichment['url'] = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
-        
-        enrichments.append(enrichment)
+        for item in flight_items:
+            enrichment = {}
+            
+            # Extract emissions data - look for emissions elements within this flight item
+            emissions_elems = item.css('[aria-label*="emissions"], [aria-label*="CO2"], [aria-label*="carbon"]')
+            for emissions_elem in emissions_elems:
+                aria_label = emissions_elem.attributes.get('aria-label', '')
+                if 'emissions estimate' in aria_label.lower():
+                    # Pattern: "Carbon emissions estimate: 502 kilograms. -22% emissions."
+                    kg_match = re.search(r'(\d+)\s*kilogram', aria_label)
+                    percent_match = re.search(r'([+-]?\d+)%\s*emissions', aria_label)
+                    if kg_match or percent_match:
+                        enrichment['emissions'] = {}
+                        if kg_match:
+                            enrichment['emissions']['kg'] = int(kg_match.group(1))
+                        if percent_match:
+                            enrichment['emissions']['percentage'] = int(percent_match.group(1))
+                        break  # Found emissions for this flight
+            
+            # Extract operated by info from aria-label
+            # Check the main flight item aria-label and also any sub-elements with aria-labels
+            aria_label = item.attributes.get('aria-label', '')
+            
+            # Also check the main container div (like JMc5Xc) within the item
+            main_container = item.css_first('.JMc5Xc')
+            if main_container:
+                container_aria_label = main_container.attributes.get('aria-label', '')
+                if container_aria_label:
+                    aria_label = container_aria_label
+            
+            if aria_label:
+                operated_pattern = r'Operated by ([^.,]+)'
+                operated_matches = re.findall(operated_pattern, aria_label)
+                if operated_matches:
+                    enrichment['operated_by'] = list(set(operated_matches))
+            
+            # Extract detailed aircraft info (this would need more specific selectors)
+            # For now, look in the aria-label for aircraft mentions
+            if aria_label:
+                aircraft_pattern = r'(Boeing|Airbus|Embraer|Bombardier)\s+([A-Z0-9-]+)'
+                aircraft_matches = re.findall(aircraft_pattern, aria_label)
+                if aircraft_matches:
+                    enrichment['aircraft_details'] = f"{aircraft_matches[0][0]} {aircraft_matches[0][1]}"
+                
+                # Extract terminal info from aria-label
+                terminal_pattern = r'Terminal\s+([A-Z0-9]+)'
+                terminal_matches = re.findall(terminal_pattern, aria_label)
+                if terminal_matches:
+                    enrichment['terminal_info'] = {'terminals': terminal_matches}
+                
+                # Extract alliance info
+                alliance_pattern = r'(Star Alliance|oneworld|SkyTeam)'
+                alliance_match = re.search(alliance_pattern, aria_label)
+                if alliance_match:
+                    enrichment['alliance'] = alliance_match.group(1)
+                
+                # Extract on-time performance if available
+                ontime_pattern = r'(\d+)%\s*on[\s-]?time'
+                ontime_match = re.search(ontime_pattern, aria_label, re.IGNORECASE)
+                if ontime_match:
+                    enrichment['on_time_performance'] = int(ontime_match.group(1))
+            
+            # Extract arrival time ahead (time zone difference)
+            time_ahead_elem = item.css_first("span.bOzv6")
+            if time_ahead_elem:
+                time_ahead = time_ahead_elem.text(strip=True)
+                if time_ahead:
+                    enrichment['arrival_time_ahead'] = time_ahead
+            
+            # Extract delay information
+            delay_elem = item.css_first(".GsCCve")
+            if delay_elem:
+                delay = delay_elem.text(strip=True)
+                if delay:
+                    enrichment['delay'] = delay
+            
+            # Extract flight URL for matching
+            url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
+            if url_elem:
+                enrichment['url'] = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
+            
+            enrichments.append(enrichment)
     
     return enrichments
 
@@ -122,6 +148,14 @@ def combine_results(js_result: Result, html_enrichments: List[dict]) -> Result:
                 # Add on-time performance
                 if 'on_time_performance' in enrichment:
                     flight.on_time_performance = enrichment['on_time_performance']
+                
+                # Add arrival time ahead
+                if 'arrival_time_ahead' in enrichment:
+                    flight.arrival_time_ahead = enrichment['arrival_time_ahead']
+                
+                # Add delay information
+                if 'delay' in enrichment:
+                    flight.delay = enrichment['delay']
     
     # Also check if connections have aircraft data and create aircraft_details if not set
     for flight in js_result.flights:
@@ -229,9 +263,9 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
         
         # Get price from itinerary summary (already in dollars)
         try:
-            price = str(int(itinerary.itinerary_summary.price)) if itinerary.itinerary_summary.price else "0"
-        except (TypeError, ValueError):
-            price = "0"
+            price = float(itinerary.itinerary_summary.price) if itinerary.itinerary_summary.price else 0.0
+        except (TypeError, ValueError, AttributeError):
+            price = 0.0
         
         # Build flight object
         flight = Flight(
@@ -530,7 +564,20 @@ def parse_response(
             delay = safe(item.css_first(".GsCCve")).text() or None
 
             # Get prices
-            price = safe(item.css_first(".YMlIz.FpEdX")).text() or "0"
+            price_text = safe(item.css_first(".YMlIz.FpEdX")).text() or "0"
+            
+            # Parse the price text to extract numeric value
+            try:
+                # Remove commas and currency symbols
+                price_text = price_text.replace(",", "")
+                # Extract just the numeric value
+                amount_match = re.search(r'([0-9.]+)', price_text)
+                if amount_match:
+                    price = float(amount_match.group(1))
+                else:
+                    price = 0.0
+            except (ValueError, TypeError):
+                price = 0.0
 
             # Stops formatting
             try:
@@ -601,7 +648,7 @@ def parse_response(
                     "duration": duration,
                     "stops": stops_fmt,
                     "delay": delay,
-                    "price": price.replace(",", ""),
+                    "price": price,
                     "flight_number": flight_number,
                     "departure_airport": departure_airport,
                     "arrival_airport": arrival_airport,

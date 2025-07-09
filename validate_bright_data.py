@@ -56,10 +56,13 @@ def analyze_output(output):
     print(f"  1-stop flights: {single_stop}")
     print(f"  2-stop flights: {two_stops}")
     
-    # Validate price format
-    price_matches = re.findall(r'"price": "(\d+\.?\d*)"', output)
+    # Validate price format (now float)
+    price_matches = re.findall(r'"price": ([0-9.]+)', output)
     if price_matches:
-        print(f"\nPrice range: ${min(float(p) for p in price_matches)} - ${max(float(p) for p in price_matches)}")
+        amounts = [float(p) for p in price_matches]
+        print(f"\nPrice range: ${min(amounts)} - ${max(amounts)}")
+    else:
+        print("\nNo price data found in output")
     
     return issues
 
