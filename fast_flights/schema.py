@@ -24,3 +24,4 @@ class Flight:
     flight_number: Optional[str] = None
     departure_airport: Optional[str] = None
     arrival_airport: Optional[str] = None
+    connecting_airports: Optional[List[str]] = None
