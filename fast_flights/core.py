@@ -164,6 +164,9 @@ def parse_response(
 
             # Attempt to extract flight number from data-travelimpactmodelwebsiteurl attribute
             flight_number = None
+            departure_airport = None
+            arrival_airport = None
+            
             url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
             if url_elem:
                 url = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
@@ -172,7 +175,25 @@ def parse_response(
                 if match:
                     airline_code = match.group(1)
                     flight_number = match.group(2)
-            # If not found, fallback to previous patterns (if needed)
+                
+                # Extract airport codes from the URL
+                # Pattern: itinerary=JFK-LAX-F9-2503-20250801
+                airport_match = re.search(r'itinerary=([A-Z]{3})-([A-Z]{3})-', url)
+                if airport_match:
+                    departure_airport = airport_match.group(1)
+                    arrival_airport = airport_match.group(2)
+            
+            # If not found in URL, try to extract from HTML elements
+            if not departure_airport or not arrival_airport:
+                # Look for airport codes in the route information
+                route_elem = item.css_first('.PTuQse')
+                if route_elem:
+                    route_text = route_elem.text(strip=True)
+                    # Pattern: JFK – LAX
+                    airport_match = re.search(r'([A-Z]{3})\s*–\s*([A-Z]{3})', route_text)
+                    if airport_match:
+                        departure_airport = airport_match.group(1)
+                        arrival_airport = airport_match.group(2)
 
             # If still not found, try looking for any span with a pattern like "AA1234", "DL567", etc.
             if not flight_number:
@@ -226,6 +247,8 @@ def parse_response(
                     "delay": delay,
                     "price": price.replace(",", ""),
                     "flight_number": flight_number,
+                    "departure_airport": departure_airport,
+                    "arrival_airport": arrival_airport,
                 }
             )
 

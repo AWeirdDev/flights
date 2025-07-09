@@ -22,3 +22,5 @@ class Flight:
     delay: Optional[str]
     price: str
     flight_number: Optional[str] = None
+    departure_airport: Optional[str] = None
+    arrival_airport: Optional[str] = None

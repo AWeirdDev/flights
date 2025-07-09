@@ -28,16 +28,19 @@ def test_multiple_flights():
         
         # Show first 5 flights with their flight numbers
         print("\nFirst 5 flights with flight numbers:")
-        for i, flight in enumerate(result.flights[:5]):
-            print(f"\nFlight {i+1}:")
+        for i, flight in enumerate(result.flights[:100]):
+            print(f"Flight {i+1}:")
             print(f"  Airline: {flight.name}")
             print(f"  Flight number: {flight.flight_number}")
             print(f"  Departure: {flight.departure}")
+            print(f"  Departure airport: {flight.departure_airport}")
             print(f"  Arrival: {flight.arrival}")
+            print(f"  Arrival airport: {flight.arrival_airport}")
             print(f"  Duration: {flight.duration}")
             print(f"  Stops: {flight.stops}")
             print(f"  Price: {flight.price}")
             print(f"  Best flight: {flight.is_best}")
+            print()
         
     except Exception as e:
         print(f"Error: {e}")
