@@ -32,6 +32,7 @@ def main():
     parser.add_argument('--type', type=str, default="economy", help="Fare class (economy, premium-economy, business or first)")
     parser.add_argument('--max_stops', type=int, help="Maximum number of stops (optional, [0|1|2])")
     parser.add_argument('--inject_eu_cookies', action=argparse.BooleanOptionalAction, help="Cookies to bypass EU data collection form")
+    parser.add_argument('--fetch_mode', type=str, default="common", help="Fetch mode: common, fallback, force-fallback, local, bright-data")
 
 
     args = parser.parse_args()
@@ -68,7 +69,8 @@ def main():
 
     # Get flights with the filter
     result = get_flights(filter,
-                         inject_eu_cookies=args.inject_eu_cookies
+                         inject_eu_cookies=args.inject_eu_cookies,
+                         fetch_mode=args.fetch_mode
                          )
 
     try:
