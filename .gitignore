@@ -2,3 +2,5 @@
 /main.py
 .ruff/
 .idea
+.venv
+.ipynb_checkpoints/
