@@ -1,4 +1,4 @@
-> Apparently, it's always a better approach to interact with the Internal Google APIs. I'm working on that, and I'll deliver the results soon if my experimental project works out well.
+Unstable.
 
 <br /><br />
 <div align="center">

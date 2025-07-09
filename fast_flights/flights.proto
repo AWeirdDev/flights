@@ -9,6 +9,7 @@ message FlightData {
   Airport from_flight = 13;
   Airport to_flight = 14;
   optional int32 max_stops = 5;
+  repeated string airlines = 6;
 }
 
 enum Seat {
