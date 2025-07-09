@@ -147,25 +147,11 @@ def parse_response(
                 strip=True
             )
 
-            # Debug: Print HTML for Delta flights
-            if name == "Delta":
-                print(f"\n=== DEBUG: Delta flight HTML ===")
-                print(f"Flight item HTML: {item.html}")
-                print(f"Airline name: {name}")
-                print(f"Full HTML context: {r.text[:2000]}...")  # First 2000 chars
-                print("=== END DEBUG ===\n")
-
-            # Debug: Print HTML for Frontier flights
-            if name == "Frontier":
-                print(f"\n=== DEBUG: Frontier flight HTML ===")
-                print(f"Flight item HTML: {item.html}")
-                print(f"Airline name: {name}")
-                print("=== END DEBUG ===\n")
-
             # Attempt to extract flight number from data-travelimpactmodelwebsiteurl attribute
             flight_number = None
             departure_airport = None
             arrival_airport = None
+            connecting_airports = []
             
             url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
             if url_elem:
@@ -176,24 +162,56 @@ def parse_response(
                     airline_code = match.group(1)
                     flight_number = match.group(2)
                 
-                # Extract airport codes from the URL
-                # Pattern: itinerary=JFK-LAX-F9-2503-20250801
-                airport_match = re.search(r'itinerary=([A-Z]{3})-([A-Z]{3})-', url)
-                if airport_match:
-                    departure_airport = airport_match.group(1)
-                    arrival_airport = airport_match.group(2)
-            
+                # Extract full route from the URL
+                # Pattern: itinerary=JFK-LAX-F9-2503-20250801 (direct)
+                # Pattern: itinerary=JFK-MCO-F9-4871-20250801,MCO-LAX-F9-4145-20250801 (with connection)
+                route_match = re.search(r'itinerary=([A-Z0-9,-]+)-[A-Z0-9]+-\d+-\d{8}', url)
+                if route_match:
+                    itinerary = route_match.group(1)
+                    # Split on commas to handle connecting flights
+                    segments = itinerary.split(',')
+                    
+                    if len(segments) == 1:
+                        # Direct flight
+                        route_parts = segments[0].split('-')
+                        if len(route_parts) >= 2:
+                            departure_airport = route_parts[0]
+                            arrival_airport = route_parts[-1]
+                            connecting_airports = None
+                    else:
+                        # Connecting flight
+                        first_segment = segments[0].split('-')
+                        last_segment = segments[-1].split('-')
+                        
+                        if len(first_segment) >= 2 and len(last_segment) >= 2:
+                            departure_airport = first_segment[0]
+                            arrival_airport = last_segment[-1]
+                            
+                            # Extract connecting airports
+                            connecting_airports = []
+                            if len(segments) == 2:
+                                # 2-segment flight: extract connecting airport from second segment
+                                connecting_airports.append(last_segment[0])  # First airport of second segment
+                            else:
+                                # Multi-segment flight: extract from intermediate segments
+                                for segment in segments[1:-1]:  # Skip first and last segments
+                                    segment_parts = segment.split('-')
+                                    if len(segment_parts) >= 2:
+                                        connecting_airports.append(segment_parts[0])  # First airport in each intermediate segment
+                            
+                            connecting_airports = connecting_airports if connecting_airports else None
+                # Do not overwrite arrival_airport or connecting_airports with HTML-derived values
+
             # If not found in URL, try to extract from HTML elements
             if not departure_airport or not arrival_airport:
-                # Look for airport codes in the route information
-                route_elem = item.css_first('.PTuQse')
-                if route_elem:
-                    route_text = route_elem.text(strip=True)
-                    # Pattern: JFK – LAX
-                    airport_match = re.search(r'([A-Z]{3})\s*–\s*([A-Z]{3})', route_text)
-                    if airport_match:
-                        departure_airport = airport_match.group(1)
-                        arrival_airport = airport_match.group(2)
+                # Look for airport codes in the HTML elements
+                departure_elem = item.css_first('div.G2WY5c div')
+                arrival_elem = item.css_first('div.c8rWCd div')
+                
+                if departure_elem and not departure_airport:
+                    departure_airport = departure_elem.text(strip=True)
+                if arrival_elem and not arrival_airport:
+                    arrival_airport = arrival_elem.text(strip=True)
 
             # If still not found, try looking for any span with a pattern like "AA1234", "DL567", etc.
             if not flight_number:
@@ -249,6 +267,7 @@ def parse_response(
                     "flight_number": flight_number,
                     "departure_airport": departure_airport,
                     "arrival_airport": arrival_airport,
+                    "connecting_airports": connecting_airports if connecting_airports else None,
                 }
             )
 
