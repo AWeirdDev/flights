@@ -21,13 +21,13 @@ filter = create_filter(
     flight_data=[
         FlightData(
             date="2025-08-06",
-            from_airport="JFK",  # New York
-            to_airport="LAX",    # Los Angeles
+            from_airport="GCM",  # Grand Cayman
+            to_airport="LHR",    # London Heathrow
         ),
         FlightData(
             date="2025-08-10",
-            from_airport="LAX",
-            to_airport="JFK",
+            from_airport="LHR",
+            to_airport="GCM",
         )
     ],
     trip="round-trip",
