@@ -5,6 +5,7 @@ Requires BRIGHT_DATA_API_KEY environment variable to be set
 """
 
 import os
+import json
 from fast_flights import create_filter, get_flights_from_filter, FlightData, Passengers
 
 # Check for required environment variable
@@ -53,22 +54,15 @@ try:
     print(f"Current price: {result.current_price}")
     print(f"Found {len(result.flights)} flights\n")
     
-    # Display flight results with ALL schema fields
+    # Display flight results as JSON
     for i, flight in enumerate(result.flights, 1):
         print(f"Flight {i}:")
-        print(f"  is_best: {flight.is_best}")
-        print(f"  name: {flight.name}")
-        print(f"  departure: {flight.departure}")
-        print(f"  arrival: {flight.arrival}")
-        print(f"  arrival_time_ahead: {flight.arrival_time_ahead}")
-        print(f"  duration: {flight.duration}")
-        print(f"  stops: {flight.stops}")
-        print(f"  delay: {flight.delay}")
-        print(f"  price: {flight.price}")
-        print(f"  flight_number: {flight.flight_number}")
-        print(f"  departure_airport: {flight.departure_airport}")
-        print(f"  arrival_airport: {flight.arrival_airport}")
-        print(f"  connecting_airports: {flight.connecting_airports}")
+        # Convert flight object to dictionary and print as JSON
+        flight_dict = vars(flight) if hasattr(flight, '__dict__') else {
+            attr: getattr(flight, attr) for attr in dir(flight)
+            if not attr.startswith('_') and not callable(getattr(flight, attr))
+        }
+        print(json.dumps(flight_dict, indent=2, default=str))
         print()
         
 except Exception as e:
