@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, Dict, Any
 
 
 @dataclass
@@ -21,6 +21,8 @@ class Connection:
     flight_number: Optional[str]
     departure_airport: Optional[str]
     arrival_airport: Optional[str]
+    aircraft: Optional[str] = None  # Aircraft type for this segment
+    operated_by: Optional[str] = None  # Operator for this segment if different
 
 
 @dataclass
@@ -39,3 +41,9 @@ class Flight:
     arrival_airport: Optional[str] = None
     connecting_airports: Optional[List[Tuple[str, str]]] = None  # List of (airport_code, layover_duration)
     connections: Optional[List[Connection]] = None
+    emissions: Optional[Dict[str, Any]] = None  # e.g. {"kg": 502, "percentage": -22}
+    operated_by: Optional[List[str]] = None  # List of operators if different from airline
+    aircraft_details: Optional[str] = None  # e.g. "Boeing 777-300ER"
+    terminal_info: Optional[Dict[str, str]] = None  # e.g. {"departure": "Terminal 1", "arrival": "Terminal 5"}
+    alliance: Optional[str] = None  # e.g. "Star Alliance"
+    on_time_performance: Optional[int] = None  # Percentage on-time if available

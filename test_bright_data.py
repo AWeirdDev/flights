@@ -45,7 +45,7 @@ print("-" * 80)
 
 try:
     # Get flights using Bright Data mode
-    result = get_flights_from_filter(filter, mode="bright-data", data_source='html')
+    result = get_flights_from_filter(filter, mode="bright-data", data_source='hybrid')
 
     if not result:
         print("No flights found. Please check the filter parameters or try again later.")

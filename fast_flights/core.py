@@ -13,7 +13,134 @@ from .bright_data_fetch import bright_data_fetch
 from .primp import Client, Response
 
 
-DataSource = Literal['html', 'js']
+DataSource = Literal['html', 'js', 'hybrid']
+
+
+def extract_html_enrichments(parser: LexborHTMLParser, html_content: str) -> List[dict]:
+    """Extract additional flight data from HTML that's not available in JS."""
+    enrichments = []
+    
+    # Get flight items - try multiple selectors
+    flight_items = parser.css('ul.Rk10dc li')
+    if not flight_items:
+        flight_items = parser.css('div[jsname="IWWDBc"] li, div[jsname="YdtKid"] li')
+    
+    for item in flight_items:
+        enrichment = {}
+        
+        # Extract emissions data - look for emissions elements within this flight item
+        emissions_elems = item.css('[aria-label*="emissions"], [aria-label*="CO2"], [aria-label*="carbon"]')
+        for emissions_elem in emissions_elems:
+            aria_label = emissions_elem.attributes.get('aria-label', '')
+            if 'emissions estimate' in aria_label.lower():
+                # Pattern: "Carbon emissions estimate: 502 kilograms. -22% emissions."
+                kg_match = re.search(r'(\d+)\s*kilogram', aria_label)
+                percent_match = re.search(r'([+-]?\d+)%\s*emissions', aria_label)
+                if kg_match or percent_match:
+                    enrichment['emissions'] = {}
+                    if kg_match:
+                        enrichment['emissions']['kg'] = int(kg_match.group(1))
+                    if percent_match:
+                        enrichment['emissions']['percentage'] = int(percent_match.group(1))
+                    break  # Found emissions for this flight
+        
+        # Extract operated by info from aria-label
+        aria_label = item.attributes.get('aria-label', '')
+        if aria_label:
+            operated_pattern = r'Operated by ([^.,]+)'
+            operated_matches = re.findall(operated_pattern, aria_label)
+            if operated_matches:
+                enrichment['operated_by'] = list(set(operated_matches))
+        
+        # Extract detailed aircraft info (this would need more specific selectors)
+        # For now, look in the aria-label for aircraft mentions
+        aircraft_pattern = r'(Boeing|Airbus|Embraer|Bombardier)\s+([A-Z0-9-]+)'
+        aircraft_matches = re.findall(aircraft_pattern, aria_label)
+        if aircraft_matches:
+            enrichment['aircraft_details'] = f"{aircraft_matches[0][0]} {aircraft_matches[0][1]}"
+        
+        # Extract terminal info from aria-label
+        terminal_pattern = r'Terminal\s+([A-Z0-9]+)'
+        terminal_matches = re.findall(terminal_pattern, aria_label)
+        if terminal_matches:
+            enrichment['terminal_info'] = {'terminals': terminal_matches}
+        
+        # Extract alliance info
+        alliance_pattern = r'(Star Alliance|oneworld|SkyTeam)'
+        alliance_match = re.search(alliance_pattern, aria_label)
+        if alliance_match:
+            enrichment['alliance'] = alliance_match.group(1)
+        
+        # Extract on-time performance if available
+        ontime_pattern = r'(\d+)%\s*on[\s-]?time'
+        ontime_match = re.search(ontime_pattern, aria_label, re.IGNORECASE)
+        if ontime_match:
+            enrichment['on_time_performance'] = int(ontime_match.group(1))
+        
+        # Extract flight URL for matching
+        url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
+        if url_elem:
+            enrichment['url'] = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
+        
+        enrichments.append(enrichment)
+    
+    return enrichments
+
+
+def combine_results(js_result: Result, html_enrichments: List[dict]) -> Result:
+    """Combine JS parsing results with HTML enrichments."""
+    # Match flights between JS and HTML using URL patterns or other identifiers
+    # Note: HTML structure may vary between files, so we match by index when counts align
+    
+    # If HTML has different number of items than JS, we may need different matching logic
+    if len(html_enrichments) > 0:
+        # For files where HTML and JS counts match closely
+        for i, flight in enumerate(js_result.flights):
+            if i < len(html_enrichments):
+                enrichment = html_enrichments[i]
+                
+                # Add emissions data
+                if 'emissions' in enrichment:
+                    flight.emissions = enrichment['emissions']
+                
+                # Add operated by info
+                if 'operated_by' in enrichment:
+                    flight.operated_by = enrichment['operated_by']
+                
+                # Add aircraft details
+                if 'aircraft_details' in enrichment:
+                    flight.aircraft_details = enrichment['aircraft_details']
+                
+                # Add terminal info
+                if 'terminal_info' in enrichment:
+                    flight.terminal_info = enrichment['terminal_info']
+                
+                # Add alliance info
+                if 'alliance' in enrichment:
+                    flight.alliance = enrichment['alliance']
+                
+                # Add on-time performance
+                if 'on_time_performance' in enrichment:
+                    flight.on_time_performance = enrichment['on_time_performance']
+    
+    # Also check if connections have aircraft data and create aircraft_details if not set
+    for flight in js_result.flights:
+        if flight.connections and not flight.aircraft_details:
+            # Check if any segment has unique aircraft
+            aircraft_types = []
+            for conn in flight.connections:
+                if conn.aircraft and conn.aircraft not in aircraft_types:
+                    aircraft_types.append(conn.aircraft)
+            
+            if aircraft_types:
+                # If all segments use same aircraft, set it as flight aircraft
+                if len(aircraft_types) == 1:
+                    flight.aircraft_details = aircraft_types[0]
+                # Otherwise list all unique aircraft
+                elif len(aircraft_types) > 1:
+                    flight.aircraft_details = " / ".join(aircraft_types)
+    
+    return js_result
 
 
 def convert_decoded_to_result(decoded: DecodedResult) -> Result:
@@ -30,15 +157,27 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
         connections = []
         for flight in itinerary.flights:
             # Handle departure/arrival times that might be in different formats
-            if isinstance(flight.departure_time, (list, tuple)) and len(flight.departure_time) >= 2:
-                departure_str = f"{flight.departure_time[0]}:{flight.departure_time[1]:02d}"
-            else:
-                departure_str = str(flight.departure_time) if flight.departure_time else ""
-                
-            if isinstance(flight.arrival_time, (list, tuple)) and len(flight.arrival_time) >= 2:
-                arrival_str = f"{flight.arrival_time[0]}:{flight.arrival_time[1]:02d}"
-            else:
-                arrival_str = str(flight.arrival_time) if flight.arrival_time else ""
+            def format_time(time_data):
+                """Format time data into HH:MM string"""
+                try:
+                    if isinstance(time_data, (list, tuple)):
+                        if len(time_data) >= 2:
+                            return f"{time_data[0]}:{time_data[1]:02d}"
+                        elif len(time_data) == 1:
+                            return f"{time_data[0]}:00"
+                        else:
+                            return ""
+                    elif isinstance(time_data, int):
+                        return f"{time_data}:00"
+                    elif time_data is None:
+                        return ""
+                    else:
+                        return str(time_data)
+                except (TypeError, ValueError, IndexError):
+                    return str(time_data) if time_data is not None else ""
+            
+            departure_str = format_time(flight.departure_time)
+            arrival_str = format_time(flight.arrival_time)
             
             connection = Connection(
                 departure=departure_str,
@@ -49,7 +188,8 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
                 delay=None,  # Not available in decoded data
                 flight_number=f"{flight.airline} {flight.flight_number}",
                 departure_airport=flight.departure_airport,
-                arrival_airport=flight.arrival_airport
+                arrival_airport=flight.arrival_airport,
+                aircraft=flight.aircraft if hasattr(flight, 'aircraft') and flight.aircraft else None
             )
             connections.append(connection)
         
@@ -60,23 +200,38 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
                 duration_str = f"{layover.minutes // 60} hr {layover.minutes % 60} min" if layover.minutes >= 60 else f"{layover.minutes} min"
                 connecting_airports.append((layover.departure_airport, duration_str))
         
-        # Format times
-        if isinstance(itinerary.departure_time, (list, tuple)) and len(itinerary.departure_time) >= 2:
-            departure_time = f"{itinerary.departure_time[0]}:{itinerary.departure_time[1]:02d}"
-        else:
-            departure_time = str(itinerary.departure_time) if itinerary.departure_time else ""
-            
-        if isinstance(itinerary.arrival_time, (list, tuple)) and len(itinerary.arrival_time) >= 2:
-            arrival_time = f"{itinerary.arrival_time[0]}:{itinerary.arrival_time[1]:02d}"
-        else:
-            arrival_time = str(itinerary.arrival_time) if itinerary.arrival_time else ""
+        # Format times using the same helper function
+        def format_time(time_data):
+            """Format time data into HH:MM string"""
+            try:
+                if isinstance(time_data, (list, tuple)):
+                    if len(time_data) >= 2:
+                        return f"{time_data[0]}:{time_data[1]:02d}"
+                    elif len(time_data) == 1:
+                        return f"{time_data[0]}:00"
+                    else:
+                        return ""
+                elif isinstance(time_data, int):
+                    return f"{time_data}:00"
+                elif time_data is None:
+                    return ""
+                else:
+                    return str(time_data)
+            except (TypeError, ValueError, IndexError):
+                return str(time_data) if time_data is not None else ""
+        
+        departure_time = format_time(itinerary.departure_time)
+        arrival_time = format_time(itinerary.arrival_time)
         
         # Format duration
         total_minutes = itinerary.travel_time
         duration = f"{total_minutes // 60} hr {total_minutes % 60} min" if total_minutes >= 60 else f"{total_minutes} min"
         
-        # Get price from itinerary summary
-        price = str(itinerary.itinerary_summary.price // 100) if itinerary.itinerary_summary.price else "0"
+        # Get price from itinerary summary (already in dollars)
+        try:
+            price = str(int(itinerary.itinerary_summary.price)) if itinerary.itinerary_summary.price else "0"
+        except (TypeError, ValueError):
+            price = "0"
         
         # Build flight object
         flight = Flight(
@@ -89,7 +244,7 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
             stops=len(itinerary.flights) - 1,  # Number of stops is number of flights - 1
             delay=None,  # Not available in decoded data
             price=price,
-            flight_number=itinerary.itinerary_summary.flights[0] if itinerary.itinerary_summary.flights else None,
+            flight_number=connections[0].flight_number if connections else (itinerary.itinerary_summary.flights[0] if itinerary.itinerary_summary.flights else None),
             departure_airport=itinerary.departure_airport,
             arrival_airport=itinerary.arrival_airport,
             connecting_airports=connecting_airports if connecting_airports else None,
@@ -125,6 +280,15 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: Literal['html'],
+) -> Result: ...
+
+@overload
+def get_flights_from_filter(
+    filter: TFSData,
+    currency: str = "",
+    *,
+    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    data_source: Literal['hybrid'],
 ) -> Result: ...
 
 def get_flights_from_filter(
@@ -224,6 +388,23 @@ def parse_response(
         if decoded is None:
             raise RuntimeError("No flights found in JS data")
         return convert_decoded_to_result(decoded)
+    
+    elif data_source == 'hybrid':
+        # First get JS data for segment details
+        script = parser.css_first(r'script.ds\:1').text()
+        match = re.search(r'^.*?\{.*?data:(\[.*\]).*\}', script)
+        assert match, 'Malformed js data, cannot find script data'
+        data = json.loads(match.group(1))
+        decoded = ResultDecoder.decode(data) if data is not None else None
+        if decoded is None:
+            raise RuntimeError("No flights found in JS data")
+        js_result = convert_decoded_to_result(decoded)
+        
+        # Then parse HTML to get enrichment data
+        html_enrichments = extract_html_enrichments(parser, r.text)
+        
+        # Combine JS and HTML data
+        return combine_results(js_result, html_enrichments)
 
     flights = []
 
