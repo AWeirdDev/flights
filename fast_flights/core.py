@@ -9,6 +9,7 @@ from .schema import Flight, Result
 from .flights_impl import FlightData, Passengers
 from .filter import TFSData
 from .fallback_playwright import fallback_playwright_fetch
+from .bright_data_fetch import bright_data_fetch
 from .primp import Client, Response
 
 
@@ -25,7 +26,7 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
+    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: Literal['js'] = ...,
 ) -> Union[DecodedResult, None]: ...
 
@@ -34,7 +35,7 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
+    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: Literal['html'],
 ) -> Result: ...
 
@@ -42,7 +43,7 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
+    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: DataSource = 'html',
 ) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
@@ -68,6 +69,9 @@ def get_flights_from_filter(
 
         res = local_playwright_fetch(params)
 
+    elif mode == "bright-data":
+        res = bright_data_fetch(params)
+
     else:
         res = fallback_playwright_fetch(params)
 
@@ -85,7 +89,7 @@ def get_flights(
     trip: Literal["round-trip", "one-way", "multi-city"],
     passengers: Passengers,
     seat: Literal["economy", "premium-economy", "business", "first"],
-    fetch_mode: Literal["common", "fallback", "force-fallback", "local"] = "common",
+    fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
 ) -> Union[Result, DecodedResult, None]:
