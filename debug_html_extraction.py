@@ -53,13 +53,31 @@ def debug_html_extraction():
     print("FLIGHT ITEMS ANALYSIS")
     print("=" * 50)
     
-    # Get flight items - try multiple selectors
-    flight_items = parser.css('ul.Rk10dc li')
-    print(f"Found {len(flight_items)} flight items with 'ul.Rk10dc li'")
+    # Use the same container-based approach as the actual parsing logic
+    flight_containers = parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')
+    print(f"Found {len(flight_containers)} flight containers")
     
-    if not flight_items:
-        flight_items = parser.css('div[jsname="IWWDBc"] li, div[jsname="YdtKid"] li')
-        print(f"Found {len(flight_items)} flight items with fallback selector")
+    all_flight_items = []
+    for i, container in enumerate(flight_containers):
+        items_in_container = container.css("ul.Rk10dc li")
+        print(f"Container {i+1}: {len(items_in_container)} items")
+        all_flight_items.extend(items_in_container)
+    
+    print(f"Total flight items: {len(all_flight_items)}")
+    
+    # Also try the old direct approach for comparison
+    direct_flight_items = parser.css('ul.Rk10dc li')
+    print(f"Direct approach found: {len(direct_flight_items)} items")
+    
+    # Compare approaches
+    print(f"\n--- Comparing Approaches ---")
+    if len(all_flight_items) == len(direct_flight_items):
+        print("✅ Both approaches found the same number of items")
+    else:
+        print(f"❌ Different counts: container-based={len(all_flight_items)}, direct={len(direct_flight_items)}")
+    
+    # Use container-based items for analysis (since that's what the actual parser uses)
+    flight_items = all_flight_items
     
     if not flight_items:
         print("❌ No flight items found! Checking selectors...")
@@ -155,15 +173,95 @@ def debug_html_extraction():
                 if 'time' in aria_label.lower() and '%' in aria_label:
                     print(f"    (time and % found in aria-label)")
         
-        # Show some HTML structure
-        print(f"\nHTML structure (first 300 chars):")
-        item_html = str(item)[:300]
+        # Show more detailed HTML structure
+        print(f"\nHTML structure (first 800 chars):")
+        item_html = str(item)[:800]
         print(f"  {item_html}...")
         
         print(f"\nCSS classes on this item:")
         classes = item.attributes.get('class', '').split()
         for cls in classes[:10]:
             print(f"  - {cls}")
+        
+        # Debug: Look for ANY elements with the expected selectors
+        print(f"\nDebugging CSS selectors in this item:")
+        
+        # Look for any elements containing "delay" or similar
+        delay_candidates = item.css('*')
+        delay_found = False
+        for elem in delay_candidates:
+            text = elem.text(strip=True).lower()
+            if 'delay' in text or 'late' in text:
+                classes = elem.attributes.get('class', '')
+                print(f"  Delay candidate: <{elem.tag}> class='{classes}' text='{text}'")
+                delay_found = True
+        if not delay_found:
+            print("  No delay-related text found in any element")
+        
+        # Look for any spans (time ahead might be in a span)
+        all_spans = item.css('span')
+        print(f"  Found {len(all_spans)} <span> elements:")
+        for j, span in enumerate(all_spans[:5]):
+            classes = span.attributes.get('class', '')
+            text = span.text(strip=True)
+            print(f"    Span {j+1}: class='{classes}' text='{text}'")
+        
+        # Look for any elements with aria-label
+        aria_elements = item.css('*[aria-label]')
+        if aria_elements:
+            print(f"  Found {len(aria_elements)} elements with aria-label:")
+            for j, elem in enumerate(aria_elements[:3]):
+                aria_label = elem.attributes.get('aria-label', '')
+                tag = elem.tag
+                classes = elem.attributes.get('class', '')
+                print(f"    Element {j+1}: <{tag}> class='{classes}' aria-label='{aria_label[:100]}...'")
+        else:
+            print("  No elements with aria-label found in this item")
+        
+        # Focus on the JMc5Xc div which seems to contain the main flight info
+        jmc5xc_div = item.css_first('div.JMc5Xc')
+        if jmc5xc_div:
+            full_aria_label = jmc5xc_div.attributes.get('aria-label', '')
+            print(f"\n  FULL ARIA-LABEL from JMc5Xc div:")
+            print(f"    {full_aria_label}")
+            
+            # Test the patterns from the hybrid approach
+            print(f"\n  Testing extraction patterns:")
+            
+            # Operated by
+            import re
+            operated_pattern = r'Operated by ([^.,]+)'
+            operated_matches = re.findall(operated_pattern, full_aria_label)
+            if operated_matches:
+                print(f"    ✅ Operated by: {operated_matches}")
+            else:
+                print(f"    ❌ No 'Operated by' matches")
+            
+            # Terminal info
+            terminal_pattern = r'Terminal\s+([A-Z0-9]+)'
+            terminal_matches = re.findall(terminal_pattern, full_aria_label)
+            if terminal_matches:
+                print(f"    ✅ Terminal: {terminal_matches}")
+            else:
+                print(f"    ❌ No 'Terminal' matches")
+            
+            # Alliance
+            alliance_pattern = r'(Star Alliance|oneworld|SkyTeam)'
+            alliance_match = re.search(alliance_pattern, full_aria_label)
+            if alliance_match:
+                print(f"    ✅ Alliance: {alliance_match.group(1)}")
+            else:
+                print(f"    ❌ No alliance matches")
+            
+            # On-time performance
+            ontime_pattern = r'(\d+)%\s*on[\s-]?time'
+            ontime_match = re.search(ontime_pattern, full_aria_label, re.IGNORECASE)
+            if ontime_match:
+                print(f"    ✅ On-time performance: {ontime_match.group(1)}%")
+            else:
+                print(f"    ❌ No on-time performance matches")
+        else:
+            print("  ❌ No JMc5Xc div found")
 
 if __name__ == "__main__":
     debug_html_extraction()

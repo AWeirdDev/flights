@@ -89,19 +89,23 @@ def extract_html_enrichments(parser: LexborHTMLParser, html_content: str) -> Lis
                 if ontime_match:
                     enrichment['on_time_performance'] = int(ontime_match.group(1))
             
-            # Extract arrival time ahead (time zone difference)
-            time_ahead_elem = item.css_first("span.bOzv6")
-            if time_ahead_elem:
-                time_ahead = time_ahead_elem.text(strip=True)
-                if time_ahead:
+            # Extract arrival time ahead and delay from aria-label if present
+            # Note: These CSS selectors don't exist in Bright Data HTML structure
+            # Instead, we'll look for this information in the aria-label text
+            if aria_label:
+                # Look for time zone indicators in aria-label
+                time_ahead_pattern = r'(\+\d+)\s*day|(\+\d+)\s*hr'
+                time_ahead_match = re.search(time_ahead_pattern, aria_label)
+                if time_ahead_match:
+                    time_ahead = time_ahead_match.group(1) or time_ahead_match.group(2)
                     enrichment['arrival_time_ahead'] = time_ahead
-            
-            # Extract delay information
-            delay_elem = item.css_first(".GsCCve")
-            if delay_elem:
-                delay = delay_elem.text(strip=True)
-                if delay:
-                    enrichment['delay'] = delay
+                
+                # Look for delay information in aria-label
+                delay_pattern = r'delayed|late|(\d+)\s*min\s*delay'
+                delay_match = re.search(delay_pattern, aria_label, re.IGNORECASE)
+                if delay_match:
+                    delay_text = delay_match.group(0) if delay_match.group(0) else f"{delay_match.group(1)} min delay"
+                    enrichment['delay'] = delay_text
             
             # Extract flight URL for matching
             url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
