@@ -147,6 +147,42 @@ def parse_response(
                 strip=True
             )
 
+            # Debug: Print HTML for Delta flights
+            if name == "Delta":
+                print(f"\n=== DEBUG: Delta flight HTML ===")
+                print(f"Flight item HTML: {item.html}")
+                print(f"Airline name: {name}")
+                print(f"Full HTML context: {r.text[:2000]}...")  # First 2000 chars
+                print("=== END DEBUG ===\n")
+
+            # Debug: Print HTML for Frontier flights
+            if name == "Frontier":
+                print(f"\n=== DEBUG: Frontier flight HTML ===")
+                print(f"Flight item HTML: {item.html}")
+                print(f"Airline name: {name}")
+                print("=== END DEBUG ===\n")
+
+            # Attempt to extract flight number from data-travelimpactmodelwebsiteurl attribute
+            flight_number = None
+            url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
+            if url_elem:
+                url = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
+                # Example: ...itinerary=JFK-LAX-F9-2503-20250801
+                match = re.search(r'-([A-Z0-9]+)-(\d+)-\d{8}$', url)
+                if match:
+                    airline_code = match.group(1)
+                    flight_number = match.group(2)
+            # If not found, fallback to previous patterns (if needed)
+
+            # If still not found, try looking for any span with a pattern like "AA1234", "DL567", etc.
+            if not flight_number:
+                flight_number_node = item.css_first("div.sSHqwe.tPgKwe.ogfYpf span + span")
+                if flight_number_node:
+                    candidate = flight_number_node.text(strip=True)
+                    # Simple heuristic: must contain both letters and numbers
+                    if re.search(r'[A-Z]{2,3}\d{2,4}', candidate):
+                        flight_number = candidate
+
             # Get departure & arrival time
             dp_ar_node = item.css("span.mv1WYe div")
             try:
@@ -189,6 +225,7 @@ def parse_response(
                     "stops": stops_fmt,
                     "delay": delay,
                     "price": price.replace(",", ""),
+                    "flight_number": flight_number,
                 }
             )
 
