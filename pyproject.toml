@@ -39,6 +39,12 @@ packages = [
     "fast_flights"
 ]
 
+[tool.flit.module]
+name = "fast_flights"
+
+[tool.flit.sdist]
+include = ["fast_flights/airports.csv"]
+
 [tool.pyright]
 pythonVersion = '3.8'
 
