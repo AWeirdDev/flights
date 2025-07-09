@@ -6,13 +6,13 @@ def test_multiple_flights():
     """Test flight number extraction for multiple flights"""
     try:
         print("Testing flight number extraction for multiple flights...")
-        print("Searching for flights from JFK to LAX on 2025-08-01...")
+        print("Searching for flights from NYC to LAX on 2025-08-01...")
         
         result = get_flights(
             flight_data=[
                 FlightData(
                     date="2025-08-01",
-                    from_airport="JFK",
+                    from_airport="NYC",
                     to_airport="LAX"
                 )
             ],
@@ -28,7 +28,7 @@ def test_multiple_flights():
         
         # Show first 5 flights with their flight numbers
         print("\nFirst 5 flights with flight numbers:")
-        for i, flight in enumerate(result.flights[:100]):
+        for i, flight in enumerate(result.flights[:10]):
             print(f"Flight {i+1}:")
             print(f"  Airline: {flight.name}")
             print(f"  Flight number: {flight.flight_number}")

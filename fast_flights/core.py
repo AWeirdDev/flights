@@ -147,21 +147,6 @@ def parse_response(
                 strip=True
             )
 
-            # Debug: Print HTML for Delta flights
-            if name == "Delta":
-                print(f"\n=== DEBUG: Delta flight HTML ===")
-                print(f"Flight item HTML: {item.html}")
-                print(f"Airline name: {name}")
-                print(f"Full HTML context: {r.text[:2000]}...")  # First 2000 chars
-                print("=== END DEBUG ===\n")
-
-            # Debug: Print HTML for Frontier flights
-            if name == "Frontier":
-                print(f"\n=== DEBUG: Frontier flight HTML ===")
-                print(f"Flight item HTML: {item.html}")
-                print(f"Airline name: {name}")
-                print("=== END DEBUG ===\n")
-
             # Attempt to extract flight number from data-travelimpactmodelwebsiteurl attribute
             flight_number = None
             departure_airport = None
@@ -254,6 +239,36 @@ def parse_response(
 
     current_price = safe(parser.css_first("span.gOatQ")).text()
     if not flights:
-        raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
+        # Extract relevant parts for debugging instead of full HTML
+        debug_info = []
+        
+        # Check if we can find the main flight containers
+        flight_containers = parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')
+        debug_info.append(f"Found {len(flight_containers)} flight containers")
+        
+        # Check if we can find any flight items
+        all_flight_items = parser.css("ul.Rk10dc li")
+        debug_info.append(f"Found {len(all_flight_items)} flight items")
+        
+        # Show first few flight items for debugging
+        for i, item in enumerate(all_flight_items[:3]):
+            name = safe(item.css_first("div.sSHqwe.tPgKwe.ogfYpf span")).text(strip=True)
+            debug_info.append(f"Flight item {i+1}: name='{name}'")
+            
+            # Show URL element if present
+            url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
+            if url_elem:
+                url = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
+                debug_info.append(f"  URL: {url[:100]}...")
+        
+        # Check for script data
+        script_elem = parser.css_first(r'script.ds\:1')
+        if script_elem:
+            debug_info.append("Found script data element")
+        else:
+            debug_info.append("No script data element found")
+        
+        debug_output = "\n".join(debug_info)
+        raise RuntimeError(f"No flights found. Debug info:\n{debug_output}")
 
     return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
