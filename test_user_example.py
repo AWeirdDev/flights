@@ -57,7 +57,6 @@ def main():
             "flight_number": kx792.flight_number,
             "departure_airport": kx792.departure_airport,
             "arrival_airport": kx792.arrival_airport,
-            "connecting_airports": kx792.connecting_airports,
             "connections": kx792.connections,
             "emissions": kx792.emissions,
             "operated_by": kx792.operated_by,

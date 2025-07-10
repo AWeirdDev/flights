@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Union, overload
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from .decoder import DecodedResult, ResultDecoder
-from .schema import Flight, Result, Connection
+from .schema import Flight, Result, FlightSegment, Layover
 from .flights_impl import FlightData, Passengers
 from .filter import TFSData
 from .fallback_playwright import fallback_playwright_fetch
@@ -320,7 +320,8 @@ def combine_results_structural(js_result: Result, parser: LexborHTMLParser) -> R
             # Check if any segment has unique aircraft
             aircraft_types = []
             for conn in flight.connections:
-                if conn.aircraft and conn.aircraft not in aircraft_types:
+                # Only check aircraft for FlightSegment objects, not Layovers
+                if hasattr(conn, 'aircraft') and conn.aircraft and conn.aircraft not in aircraft_types:
                     aircraft_types.append(conn.aircraft)
             
             if aircraft_types:
@@ -423,7 +424,8 @@ def combine_results(js_result: Result, html_enrichments: List[dict]) -> Result:
             # Check if any segment has unique aircraft
             aircraft_types = []
             for conn in flight.connections:
-                if conn.aircraft and conn.aircraft not in aircraft_types:
+                # Only check aircraft for FlightSegment objects, not Layovers
+                if hasattr(conn, 'aircraft') and conn.aircraft and conn.aircraft not in aircraft_types:
                     aircraft_types.append(conn.aircraft)
             
             if aircraft_types:
@@ -505,7 +507,7 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
                 elif i < len(layover_airports):
                     arrival_airport = layover_airports[i]
             
-            connection = Connection(
+            connection = FlightSegment(
                 departure=departure_str,
                 arrival=arrival_str,
                 arrival_time_ahead="",  # Not available in decoded data
@@ -518,13 +520,13 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
                 aircraft=flight.aircraft if hasattr(flight, 'aircraft') and flight.aircraft else None
             )
             connections.append(connection)
-        
-        # Create connecting_airports with layover durations
-        connecting_airports = []
-        if itinerary.layovers:
-            for layover in itinerary.layovers:
+            
+            # Add layover after each flight segment except the last one
+            if i < len(itinerary.flights) - 1 and itinerary.layovers and i < len(itinerary.layovers):
+                layover = itinerary.layovers[i]
                 duration_str = f"{layover.minutes // 60} hr {layover.minutes % 60} min" if layover.minutes >= 60 else f"{layover.minutes} min"
-                connecting_airports.append((layover.departure_airport, duration_str))
+                connections.append(Layover(duration=duration_str))
+        
         
         # Format times using the same helper function
         def format_time(time_data):
@@ -573,7 +575,6 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
             flight_number=connections[0].flight_number if connections else (itinerary.itinerary_summary.flights[0] if itinerary.itinerary_summary.flights else None),
             departure_airport=itinerary.departure_airport,
             arrival_airport=itinerary.arrival_airport,
-            connecting_airports=connecting_airports if connecting_airports else None,
             connections=connections if len(connections) > 1 else None  # Only include if multi-segment
         )
         
@@ -761,7 +762,6 @@ def parse_response(
             flight_number = None
             departure_airport = None
             arrival_airport = None
-            connecting_airports = []
             connections = []
             
             url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
@@ -789,7 +789,6 @@ def parse_response(
                             if len(route_parts) >= 4:  # e.g., JFK-LAX-F9-2503-20250801
                                 departure_airport = route_parts[0]
                                 arrival_airport = route_parts[1]
-                                connecting_airports = None
                         else:
                             # Connecting flight - extract individual connections
                             flight_segments = []
@@ -808,10 +807,6 @@ def parse_response(
                                 departure_airport = flight_segments[0]['departure_airport']
                                 arrival_airport = flight_segments[-1]['arrival_airport']
                                 
-                                # Extract connecting airports with placeholder durations
-                                connecting_airports = []
-                                for i in range(1, len(flight_segments)):
-                                    connecting_airports.append((flight_segments[i]['departure_airport'], ""))  # Empty duration for now
                                 
                                 # Create connections from flight segments
                                 connections = []
@@ -905,32 +900,14 @@ def parse_response(
                 layover_pattern = r'Layover \((\d+) of \d+\) is a ((?:\d+ hr )?(?:\d+ min)?) layover at ([^.]+)'
                 layover_matches = re.findall(layover_pattern, aria_label)
                 
-                # Update connecting_airports with durations
-                if layover_matches and connecting_airports:
-                    updated_connecting_airports = []
-                    for i, (airport_code, _) in enumerate(connecting_airports):
-                        if i < len(layover_matches):
-                            _, duration, _ = layover_matches[i]
-                            updated_connecting_airports.append((airport_code, duration))
-                        else:
-                            updated_connecting_airports.append((airport_code, ""))
-                    connecting_airports = updated_connecting_airports
-                elif layover_matches and not connecting_airports:
-                    # Handle case where we have layover info but no connecting_airports yet
-                    # Extract airport codes from the layover descriptions
-                    connecting_airports = []
-                    for _, duration, airport_desc in layover_matches:
-                        # Try to extract airport code from description
-                        # Pattern: "Airport Name in City" - we'll use the city as a fallback
-                        connecting_airports.append(("", duration))  # Will be filled by URL data if available
 
             # Create connections list for multi-segment flights from URL data
             connections_list = None
             if 'connections' in locals() and connections and len(connections) > 1:
                 connections_list = []
                 # Since we don't have individual times/durations from HTML, we'll use placeholder values
-                for conn in connections:
-                    connections_list.append(Connection(
+                for i, conn in enumerate(connections):
+                    connections_list.append(FlightSegment(
                         departure="",  # Not available in HTML
                         arrival="",  # Not available in HTML  
                         arrival_time_ahead="",
@@ -941,6 +918,16 @@ def parse_response(
                         departure_airport=conn.get('departure_airport'),
                         arrival_airport=conn.get('arrival_airport')
                     ))
+                    
+                    # Add layover after each segment except the last one
+                    if i < len(connections) - 1:
+                        # Get layover duration from layover_matches or connecting_airports
+                        layover_duration = ""
+                        if 'layover_matches' in locals() and layover_matches and i < len(layover_matches):
+                            _, layover_duration, _ = layover_matches[i]
+                        
+                        if layover_duration:
+                            connections_list.append(Layover(duration=layover_duration))
             
             flights.append(
                 {
@@ -956,7 +943,6 @@ def parse_response(
                     "flight_number": flight_number,
                     "departure_airport": departure_airport,
                     "arrival_airport": arrival_airport,
-                    "connecting_airports": connecting_airports if connecting_airports else None,
                     "connections": connections_list
                 }
             )

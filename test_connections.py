@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from fast_flights.core import parse_response
 from fast_flights.primp import Response
+from fast_flights.schema import Layover
 
 
 def test_debug_file():
@@ -39,15 +40,18 @@ def test_debug_file():
                 print(f"  Route: {flight.departure_airport} → {flight.arrival_airport}")
                 print(f"  Stops: {flight.stops}")
                 print(f"  Price: ${flight.price}")
-                if flight.connecting_airports:
-                    print(f"  Connecting airports: {flight.connecting_airports}")
                 print(f"  Connections ({len(flight.connections)}):")
                 for j, conn in enumerate(flight.connections):
-                    print(f"    Segment {j+1}: {conn.departure_airport} → {conn.arrival_airport}")
-                    print(f"      Flight: {conn.flight_number}")
-                    print(f"      Duration: {conn.duration}")
-                    print(f"      Departure: {conn.departure}")
-                    print(f"      Arrival: {conn.arrival}")
+                    if isinstance(conn, Layover):
+                        # This is a Layover
+                        print(f"    Layover: {conn.duration}")
+                    else:
+                        # This is a FlightSegment
+                        print(f"    Segment: {conn.departure_airport} → {conn.arrival_airport}")
+                        print(f"      Flight: {conn.flight_number}")
+                        print(f"      Duration: {conn.duration}")
+                        print(f"      Departure: {conn.departure}")
+                        print(f"      Arrival: {conn.arrival}")
                     
     except Exception as e:
         print(f"Error with JS parser: {e}")
@@ -69,12 +73,15 @@ def test_debug_file():
                 print(f"  Route: {flight.departure_airport} → {flight.arrival_airport}")
                 print(f"  Stops: {flight.stops}")
                 print(f"  Price: ${flight.price}")
-                if flight.connecting_airports:
-                    print(f"  Connecting airports: {flight.connecting_airports}")
                 print(f"  Connections ({len(flight.connections)}):")
                 for j, conn in enumerate(flight.connections):
-                    print(f"    Segment {j+1}: {conn.departure_airport} → {conn.arrival_airport}")
-                    print(f"      Flight: {conn.flight_number}")
+                    if isinstance(conn, Layover):
+                        # This is a Layover
+                        print(f"    Layover: {conn.duration}")
+                    else:
+                        # This is a FlightSegment
+                        print(f"    Segment: {conn.departure_airport} → {conn.arrival_airport}")
+                        print(f"      Flight: {conn.flight_number}")
                     
     except Exception as e:
         print(f"Error with HTML parser: {e}")

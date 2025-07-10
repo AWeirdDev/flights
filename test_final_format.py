@@ -3,6 +3,7 @@
 
 import json
 from fast_flights import FlightData, Passengers, create_filter, get_flights_from_filter
+from fast_flights.schema import Layover
 
 def test_final_format():
     # Create a sample flight search
@@ -41,9 +42,9 @@ def test_final_format():
                 "flight_number": flight.flight_number,
                 "departure_airport": flight.departure_airport,
                 "arrival_airport": flight.arrival_airport,
-                "connecting_airports": flight.connecting_airports,
                 "connections": [
-                    f"Connection(departure='{c.departure}', arrival='{c.arrival}', arrival_time_ahead='{c.arrival_time_ahead}', duration='{c.duration}', name='{c.name}', delay={c.delay}, flight_number='{c.flight_number}', departure_airport='{c.departure_airport}', arrival_airport='{c.arrival_airport}', aircraft='{c.aircraft}', operated_by={c.operated_by})"
+                    f"Layover(duration='{c.duration}')" if isinstance(c, Layover) else
+                    f"FlightSegment(departure='{c.departure}', arrival='{c.arrival}', arrival_time_ahead='{c.arrival_time_ahead}', duration='{c.duration}', name='{c.name}', delay={c.delay}, flight_number='{c.flight_number}', departure_airport='{c.departure_airport}', arrival_airport='{c.arrival_airport}', aircraft='{c.aircraft}', operated_by={c.operated_by})"
                     for c in flight.connections
                 ] if flight.connections else None,
                 "emissions": flight.emissions,
@@ -57,9 +58,10 @@ def test_final_format():
             # Check if all airports are codes
             all_good = True
             for conn in flight.connections:
-                if len(conn.departure_airport) > 4 or len(conn.arrival_airport) > 4:
-                    all_good = False
-                    break
+                if not isinstance(conn, Layover):  # Skip layovers
+                    if len(conn.departure_airport) > 4 or len(conn.arrival_airport) > 4:
+                        all_good = False
+                        break
             
             if all_good:
                 print("\n✅ All airport fields contain proper codes (not names)!")
