@@ -1,0 +1,72 @@
+FINAL FIELD EXTRACTION TEST
+======================================================================
+Testing file: raw_html_extreme_LAX_JFK_9_Terminals.html
+
+
+HTML MODE:
+------------------------------
+✅ Parsed successfully: 229 flights
+
+Flight 1:
+  Name: American
+  Price: $109.0
+  Departure: 12:00 PM on Wed, Dec 24
+  Arrival: 2:18 PM on Wed, Dec 24
+  arrival_time_ahead: ''
+  delay: None
+  operated_by: None
+
+Flight 2:
+  Name: American
+  Price: $109.0
+  Departure: 4:55 PM on Wed, Dec 24
+  Arrival: 7:15 PM on Wed, Dec 24
+  arrival_time_ahead: ''
+  delay: None
+  operated_by: None
+
+Flight 3:
+  Name: Delta
+  Price: $119.0
+  Departure: 9:00 AM on Wed, Dec 24
+  Arrival: 11:15 AM on Wed, Dec 24
+  arrival_time_ahead: ''
+  delay: None
+  operated_by: None
+
+HYBRID MODE:
+------------------------------
+✅ Parsed successfully: 115 flights
+
+Flight 1:
+  Name: American
+  Price: $108.48
+  Departure: 12:00
+  Arrival: 14:18
+  arrival_time_ahead: ''
+  delay: None
+  operated_by: ['Republic Airways as American Eagle']
+
+Flight 2:
+  Name: American
+  Price: $108.48
+  Departure: 16:55
+  Arrival: 19:15
+  arrival_time_ahead: ''
+  delay: None
+  operated_by: ['Republic Airways as American Eagle']
+
+Flight 3:
+  Name: Delta
+  Price: $118.48
+  Departure: 9:00
+  Arrival: 11:15
+  arrival_time_ahead: ''
+  delay: None
+  operated_by: None
+
+======================================================================
+✅ Field removal complete:
+  - Removed duplicate arrival_time_ahead extraction
+  - Removed terminal_info, alliance, on_time_performance
+  - Kept: arrival_time_ahead, delay, operated_by (hybrid mode)

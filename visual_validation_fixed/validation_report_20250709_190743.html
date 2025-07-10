@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight Parser Visual Validation Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        .metric { display: inline-block; margin: 10px 20px 10px 0; }
+        .metric .value { font-size: 24px; font-weight: bold; }
+        .metric .label { color: #666; }
+        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f5f5f5; }
+        .success { background-color: #d4edda; }
+        .warning { background-color: #fff3cd; }
+        .error { background-color: #f8d7da; }
+        .flight-sample { margin: 10px 0; padding: 10px; background: #f9f9f9; }
+        img { max-width: 100%; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Flight Parser Visual Validation Report</h1>
+    <p>Generated: 2025-07-09 19:08:18</p>
+    
+    <div class="section">
+        <h2>Parser Comparison</h2>
+        <div class="metric">
+            <div class="value">108</div>
+            <div class="label">JS Parser Flights</div>
+        </div>
+        <div class="metric">
+            <div class="value">108</div>
+            <div class="label">HTML Parser Flights</div>
+        </div>
+        <div class="metric">
+            <div class="value">108</div>
+            <div class="label">Hybrid Parser Flights</div>
+        </div>
+        <div class="metric">
+            <div class="value">109</div>
+            <div class="label">HTML Enrichments</div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Visual Counts</h2>
+        <div class="metric">
+            <div class="value">4</div>
+            <div class="label">Flight Containers</div>
+        </div>
+        <div class="metric">
+            <div class="value">218</div>
+            <div class="label">Total Flight Items</div>
+        </div>
+        <div class="metric">
+            <div class="value">648</div>
+            <div class="label">Visible Prices</div>
+        </div>
+        <p>Items per container: [3, 106, 3, 106]</p>
+    </div>
+    
+    <div class="section">
+        <h2>Discrepancy Analysis</h2>
+        <table>
+            <tr>
+                <th>Metric</th>
+                <th>Value</th>
+                <th>Status</th>
+            </tr>
+            <tr class="success">
+                <td>JS vs HTML flight count</td>
+                <td>108 vs 108 (diff: 0)</td>
+                <td>Match</td>
+            </tr>
+            <tr class="success">
+                <td>Hybrid vs JS flight count</td>
+                <td>108 vs 108</td>
+                <td>Match</td>
+            </tr>
+            <tr>
+                <td>Visual items vs HTML flights</td>
+                <td>218 vs 108</td>
+                <td>Different</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>Visual Flight Samples</h2>
+        <p>First 5 flights as extracted visually from the page:</p>
+        
+        <div class="flight-sample">
+            <h4>Visual Flight 1</h4>
+            <table>
+                <tr>
+                    <td><strong>Airline:</strong> American</td>
+                    <td><strong>Departure:</strong> 12:45 PM on Sat, Aug 16</td>
+                    <td><strong>Arrival:</strong> 9:20 PM on Sat, Aug 16</td>
+                </tr>
+                <tr>
+                    <td><strong>Price:</strong> $199</td>
+                    <td><strong>Stops:</strong> Nonstop</td>
+                    <td><strong>+Days:</strong> N/A</td>
+                </tr>
+            </table>
+        </div>
+            
+        <div class="flight-sample">
+            <h4>Visual Flight 2</h4>
+            <table>
+                <tr>
+                    <td><strong>Airline:</strong> JetBlue</td>
+                    <td><strong>Departure:</strong> 6:00 AM on Sat, Aug 16</td>
+                    <td><strong>Arrival:</strong> 2:29 PM on Sat, Aug 16</td>
+                </tr>
+                <tr>
+                    <td><strong>Price:</strong> $204</td>
+                    <td><strong>Stops:</strong> Nonstop</td>
+                    <td><strong>+Days:</strong> N/A</td>
+                </tr>
+            </table>
+        </div>
+            
+        <div class="flight-sample">
+            <h4>Visual Flight 3</h4>
+            <table>
+                <tr>
+                    <td><strong>Airline:</strong> Delta</td>
+                    <td><strong>Departure:</strong> 6:00 AM on Sat, Aug 16</td>
+                    <td><strong>Arrival:</strong> 2:40 PM on Sat, Aug 16</td>
+                </tr>
+                <tr>
+                    <td><strong>Price:</strong> $214</td>
+                    <td><strong>Stops:</strong> Nonstop</td>
+                    <td><strong>+Days:</strong> N/A</td>
+                </tr>
+            </table>
+        </div>
+            
+        <div class="flight-sample">
+            <h4>Visual Flight 4</h4>
+            <table>
+                <tr>
+                    <td><strong>Airline:</strong> Frontier</td>
+                    <td><strong>Departure:</strong> 7:03 PM on Sat, Aug 16</td>
+                    <td><strong>Arrival:</strong> 11:55 AM on Sun, Aug 17</td>
+                </tr>
+                <tr>
+                    <td><strong>Price:</strong> $158</td>
+                    <td><strong>Stops:</strong> 1 stop</td>
+                    <td><strong>+Days:</strong> +1</td>
+                </tr>
+            </table>
+        </div>
+            
+        <div class="flight-sample">
+            <h4>Visual Flight 5</h4>
+            <table>
+                <tr>
+                    <td><strong>Airline:</strong> Sun Country Airlines</td>
+                    <td><strong>Departure:</strong> 11:55 PM on Sat, Aug 16</td>
+                    <td><strong>Arrival:</strong> 10:31 AM on Sun, Aug 17</td>
+                </tr>
+                <tr>
+                    <td><strong>Price:</strong> $166</td>
+                    <td><strong>Stops:</strong> 1 stop</td>
+                    <td><strong>+Days:</strong> +1</td>
+                </tr>
+            </table>
+        </div>
+            
+    </div>
+    
+    <div class="section">
+        <h2>Enrichment Analysis</h2>
+        <table>
+            <tr>
+                <th>Enrichment Type</th>
+                <th>Count</th>
+                <th>Percentage</th>
+            </tr>
+            <tr>
+                <td>With arrival_time_ahead</td>
+                <td>58</td>
+                <td>53.2%</td>
+            </tr>
+            <tr>
+                <td>With emissions</td>
+                <td>108</td>
+                <td>99.1%</td>
+            </tr>
+            <tr>
+                <td>With operated_by</td>
+                <td>16</td>
+                <td>14.7%</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>Hybrid Parser Performance</h2>
+        
+        <table>
+            <tr>
+                <th>Field</th>
+                <th>HTML Parser</th>
+                <th>Hybrid Parser</th>
+                <th>Status</th>
+            </tr>
+            <tr class="error">
+                <td>arrival_time_ahead</td>
+                <td>58 (53.7%)</td>
+                <td>53 (49.1%)</td>
+                <td>✗ Hybrid has fewer!</td>
+            </tr>
+        </table>
+        
+        <h3>Key Findings</h3>
+        <ul>
+            <li>JS parser finds 108 flights while HTML finds 108 (diff: 0)</li>
+            <li>Visual count shows 218 flight items on page</li>
+            <li>HTML enrichments: 109 items, 58 with arrival_time_ahead</li>
+            <li>Hybrid mode extracts 53 arrival_time_ahead vs HTML's 58</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Screenshots</h2>
+        <p>Check the output directory for:</p>
+        <ul>
+            <li>full_page_20250709_190743.png - Full page screenshot</li>
+            <li>container_0_20250709_190743.png - First flight container</li>
+            <li>container_1_20250709_190743.png - Second flight container</li>
+            <li>container_2_20250709_190743.png - Third flight container</li>
+        </ul>
+    </div>
+</body>
+</html>
+        

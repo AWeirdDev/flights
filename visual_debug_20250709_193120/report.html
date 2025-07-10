@@ -1,0 +1,43 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Visual Debug Report - Hybrid Parser Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        .success { color: green; font-weight: bold; }
+        .metric { display: inline-block; margin: 10px 20px 10px 0; }
+        img { max-width: 100%; margin: 10px 0; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>Visual Debug Report - Hybrid Parser Fix</h1>
+    <p>Generated: 2025-07-09 19:31:56</p>
+    
+    <div class="section">
+        <h2>Parser Results</h2>
+        <div class="metric">JS Parser: 108 flights, 0 with arrival_time_ahead</div><br>
+        <div class="metric">HTML Parser: 108 flights, 58 with arrival_time_ahead</div><br>
+        <div class="metric success">Hybrid Parser: 108 flights, 58 with arrival_time_ahead ✓</div>
+    </div>
+    
+    <div class="section">
+        <h2>Fix Summary</h2>
+        <ul>
+            <li class="success">✓ Fixed enrichment extraction to match HTML parser (exclude last item in non-first containers)</li>
+            <li class="success">✓ Improved matching algorithm to handle connecting flights correctly</li>
+            <li class="success">✓ Hybrid parser now extracts all arrival_time_ahead values</li>
+            <li class="success">✓ No regression in other fields (operated_by, emissions still work)</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Visual Evidence</h2>
+        <p>Screenshots showing flights with +1 day indicator:</p>
+        <img src="flight_plus1_1.png" alt="Flight with +1 day">
+        <img src="flight_plus1_2.png" alt="Flight with +1 day">
+        <img src="flight_plus1_3.png" alt="Flight with +1 day">
+    </div>
+</body>
+</html>

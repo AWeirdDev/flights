@@ -44,6 +44,3 @@ class Flight:
     emissions: Optional[Dict[str, Any]] = None  # e.g. {"kg": 502, "percentage": -22}
     operated_by: Optional[List[str]] = None  # List of operators if different from airline
     aircraft_details: Optional[str] = None  # e.g. "Boeing 777-300ER"
-    terminal_info: Optional[Dict[str, str]] = None  # e.g. {"departure": "Terminal 1", "arrival": "Terminal 5"}
-    alliance: Optional[str] = None  # e.g. "Star Alliance"
-    on_time_performance: Optional[int] = None  # Percentage on-time if available
