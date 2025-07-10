@@ -576,6 +576,11 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
             connecting_airports=connecting_airports if connecting_airports else None,
             connections=connections if len(connections) > 1 else None  # Only include if multi-segment
         )
+        
+        # For direct flights (no connections), set aircraft_details from the single segment
+        if flight.stops == 0 and itinerary.flights and itinerary.flights[0].aircraft:
+            flight.aircraft_details = itinerary.flights[0].aircraft
+        
         flights.append(flight)
     
     # Determine current price level (not available in decoded data, default to "typical")
