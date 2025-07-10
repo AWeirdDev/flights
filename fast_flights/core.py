@@ -33,6 +33,108 @@ def should_skip_container(container_index: int, container_sizes: List[int]) -> b
     return False
 
 
+def extract_enrichments_from_container(parser: LexborHTMLParser, container_jsname: str) -> List[dict]:
+    """Extract enrichments from a specific container type."""
+    enrichments = []
+    
+    # Get all containers of the specified type
+    containers = parser.css(f'div[jsname="{container_jsname}"]')
+    
+    for container in containers:
+        # Get flight items within this container
+        flight_items = container.css("ul.Rk10dc li")
+        
+        # For "other" flights container, exclude last item to match HTML parser behavior
+        if container_jsname == "YdtKid":
+            flight_items = flight_items[:-1]
+        
+        for item in flight_items:
+            enrichment = {}
+            
+            # Extract emissions data - look for emissions elements within this flight item
+            emissions_elems = item.css('[aria-label*="emissions"], [aria-label*="CO2"], [aria-label*="carbon"]')
+            for emissions_elem in emissions_elems:
+                aria_label = emissions_elem.attributes.get('aria-label', '')
+                if 'emissions estimate' in aria_label.lower():
+                    # Pattern: "Carbon emissions estimate: 502 kilograms. -22% emissions."
+                    kg_match = re.search(r'(\d+)\s*kilogram', aria_label)
+                    percent_match = re.search(r'([+-]?\d+)%\s*emissions', aria_label)
+                    if kg_match or percent_match:
+                        enrichment['emissions'] = {}
+                        if kg_match:
+                            enrichment['emissions']['kg'] = int(kg_match.group(1))
+                        if percent_match:
+                            enrichment['emissions']['percentage'] = int(percent_match.group(1))
+                        break  # Found emissions for this flight
+            
+            # Extract operated by info from aria-label
+            # Check the main flight item aria-label and also any sub-elements with aria-labels
+            aria_label = item.attributes.get('aria-label', '')
+            
+            # Also check the main container div (like JMc5Xc) within the item
+            main_container = item.css_first('.JMc5Xc')
+            if main_container:
+                container_aria_label = main_container.attributes.get('aria-label', '')
+                if container_aria_label:
+                    aria_label = container_aria_label
+            
+            if aria_label:
+                operated_pattern = r'Operated by ([^.,]+)'
+                operated_matches = re.findall(operated_pattern, aria_label)
+                if operated_matches:
+                    enrichment['operated_by'] = list(set(operated_matches))
+            
+            # Extract detailed aircraft info (this would need more specific selectors)
+            # For now, look in the aria-label for aircraft mentions
+            if aria_label:
+                aircraft_pattern = r'(Boeing|Airbus|Embraer|Bombardier)\s+([A-Z0-9-]+)'
+                aircraft_matches = re.findall(aircraft_pattern, aria_label)
+                if aircraft_matches:
+                    enrichment['aircraft_details'] = f"{aircraft_matches[0][0]} {aircraft_matches[0][1]}"
+                
+            
+            # Extract arrival time ahead using the CSS selector that works
+            time_ahead_elem = item.css_first("span.bOzv6")
+            if time_ahead_elem:
+                time_ahead_text = time_ahead_elem.text(strip=True)
+                if time_ahead_text:
+                    enrichment['arrival_time_ahead'] = time_ahead_text
+            
+            # Also try to extract from aria-label as fallback
+            if aria_label and 'arrival_time_ahead' not in enrichment:
+                # Look for time zone indicators in aria-label
+                time_ahead_pattern = r'(\+\d+)\s*day|(\+\d+)\s*hr'
+                time_ahead_match = re.search(time_ahead_pattern, aria_label)
+                if time_ahead_match:
+                    time_ahead = time_ahead_match.group(1) or time_ahead_match.group(2)
+                    enrichment['arrival_time_ahead'] = time_ahead
+            
+            # Extract delay information
+            # First try CSS selector (though it doesn't exist in Bright Data HTML)
+            delay_elem = item.css_first(".GsCCve")
+            if delay_elem:
+                delay_text = delay_elem.text(strip=True)
+                if delay_text:
+                    enrichment['delay'] = delay_text
+            
+            # Also check aria-label for delay information as fallback
+            if aria_label and 'delay' not in enrichment:
+                delay_pattern = r'delayed|late|(\d+)\s*min\s*delay'
+                delay_match = re.search(delay_pattern, aria_label, re.IGNORECASE)
+                if delay_match:
+                    delay_text = delay_match.group(0) if delay_match.group(0) else f"{delay_match.group(1)} min delay"
+                    enrichment['delay'] = delay_text
+            
+            # Extract flight URL for matching
+            url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
+            if url_elem:
+                enrichment['url'] = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
+            
+            enrichments.append(enrichment)
+    
+    return enrichments
+
+
 def extract_html_enrichments(parser: LexborHTMLParser, html_content: str) -> List[dict]:
     """Extract additional flight data from HTML that's not available in JS."""
     enrichments = []
@@ -140,6 +242,96 @@ def extract_html_enrichments(parser: LexborHTMLParser, html_content: str) -> Lis
             enrichments.append(enrichment)
     
     return enrichments
+
+
+def combine_results_structural(js_result: Result, parser: LexborHTMLParser) -> Result:
+    """Combine JS parsing results with HTML enrichments using structural matching."""
+    # Separate JS flights by is_best flag
+    js_best = [f for f in js_result.flights if f.is_best]
+    js_other = [f for f in js_result.flights if not f.is_best]
+    
+    # Extract enrichments by container type
+    # IWWDBc = best flights, YdtKid = other flights
+    best_enrichments = extract_enrichments_from_container(parser, 'IWWDBc')
+    other_enrichments = extract_enrichments_from_container(parser, 'YdtKid')
+    
+    # Helper function to match within a category
+    def apply_enrichments_to_category(flights: List[Flight], enrichments: List[dict]):
+        """Apply enrichments to flights within a category (best or other)."""
+        # Create URL mapping for enrichments
+        enrichment_by_url = {}
+        for idx, enrichment in enumerate(enrichments):
+            if 'url' in enrichment and enrichment['url']:
+                enrichment_by_url[enrichment['url']] = (idx, enrichment)
+        
+        # Track used enrichments
+        used_indices = set()
+        
+        for flight in flights:
+            enrichment = None
+            
+            # Try URL-based matching first
+            if flight.flight_number and flight.departure_airport and flight.arrival_airport:
+                flight_num_for_url = flight.flight_number.replace(' ', '-')
+                
+                best_match_idx = None
+                best_match_enrichment = None
+                
+                for url, (idx, enrich) in enrichment_by_url.items():
+                    if idx in used_indices:
+                        continue
+                    
+                    # For connecting flights, JS only shows first segment's flight number
+                    if flight_num_for_url in url and f"{flight.departure_airport}-" in url:
+                        # Prefer exact match for direct flights
+                        if f"{flight.departure_airport}-{flight.arrival_airport}-{flight_num_for_url}" in url:
+                            best_match_idx = idx
+                            best_match_enrichment = enrich
+                            break  # Exact match found
+                        # Otherwise accept if departure airport and flight number match
+                        elif best_match_idx is None:
+                            best_match_idx = idx
+                            best_match_enrichment = enrich
+                
+                if best_match_enrichment:
+                    enrichment = best_match_enrichment
+                    used_indices.add(best_match_idx)
+            
+            # Apply enrichment if found
+            if enrichment:
+                if 'emissions' in enrichment:
+                    flight.emissions = enrichment['emissions']
+                if 'operated_by' in enrichment:
+                    flight.operated_by = enrichment['operated_by']
+                if 'aircraft_details' in enrichment:
+                    flight.aircraft_details = enrichment['aircraft_details']
+                if 'arrival_time_ahead' in enrichment:
+                    flight.arrival_time_ahead = enrichment['arrival_time_ahead']
+                if 'delay' in enrichment:
+                    flight.delay = enrichment['delay']
+    
+    # Apply enrichments to each category
+    apply_enrichments_to_category(js_best, best_enrichments)
+    apply_enrichments_to_category(js_other, other_enrichments)
+    
+    # Also check if connections have aircraft data and create aircraft_details if not set
+    for flight in js_result.flights:
+        if flight.connections and not flight.aircraft_details:
+            # Check if any segment has unique aircraft
+            aircraft_types = []
+            for conn in flight.connections:
+                if conn.aircraft and conn.aircraft not in aircraft_types:
+                    aircraft_types.append(conn.aircraft)
+            
+            if aircraft_types:
+                # If all segments use same aircraft, set it as flight aircraft
+                if len(aircraft_types) == 1:
+                    flight.aircraft_details = aircraft_types[0]
+                # Otherwise list all unique aircraft
+                elif len(aircraft_types) > 1:
+                    flight.aircraft_details = " / ".join(aircraft_types)
+    
+    return js_result
 
 
 def combine_results(js_result: Result, html_enrichments: List[dict]) -> Result:
@@ -502,11 +694,8 @@ def parse_response(
             raise RuntimeError("No flights found in JS data")
         js_result = convert_decoded_to_result(decoded)
         
-        # Then parse HTML to get enrichment data
-        html_enrichments = extract_html_enrichments(parser, r.text)
-        
-        # Combine JS and HTML data
-        return combine_results(js_result, html_enrichments)
+        # Use structural matching instead of index-based
+        return combine_results_structural(js_result, parser)
 
     flights = []
     
