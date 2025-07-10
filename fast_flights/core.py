@@ -449,7 +449,16 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
         
         # Create connections list from individual flights
         connections = []
-        for flight in itinerary.flights:
+        
+        # First, collect airport codes from layovers for reference
+        layover_airports = []
+        if itinerary.layovers:
+            for layover in itinerary.layovers:
+                layover_airports.append(layover.departure_airport)
+                if hasattr(layover, 'arrival_airport') and layover.arrival_airport:
+                    layover_airports.append(layover.arrival_airport)
+        
+        for i, flight in enumerate(itinerary.flights):
             # Handle departure/arrival times that might be in different formats
             def format_time(time_data):
                 """Format time data into HH:MM string"""
@@ -473,6 +482,29 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
             departure_str = format_time(flight.departure_time)
             arrival_str = format_time(flight.arrival_time)
             
+            # Fix airport codes that might be full names instead
+            departure_airport = flight.departure_airport
+            arrival_airport = flight.arrival_airport
+            
+            # If the airport field contains a name (>4 chars), try to fix it
+            if departure_airport and len(departure_airport) > 4:
+                # This is an airport name, not a code
+                # For first flight, use itinerary departure airport
+                if i == 0:
+                    departure_airport = itinerary.departure_airport
+                # For connecting flights, use the layover airport code
+                elif i - 1 < len(layover_airports):
+                    departure_airport = layover_airports[i - 1]
+            
+            if arrival_airport and len(arrival_airport) > 4:
+                # This is an airport name, not a code
+                # For last flight, use itinerary arrival airport
+                if i == len(itinerary.flights) - 1:
+                    arrival_airport = itinerary.arrival_airport
+                # For connecting flights, use the layover airport code
+                elif i < len(layover_airports):
+                    arrival_airport = layover_airports[i]
+            
             connection = Connection(
                 departure=departure_str,
                 arrival=arrival_str,
@@ -481,8 +513,8 @@ def convert_decoded_to_result(decoded: DecodedResult) -> Result:
                 name=flight.airline_name,
                 delay=None,  # Not available in decoded data
                 flight_number=f"{flight.airline} {flight.flight_number}",
-                departure_airport=flight.departure_airport,
-                arrival_airport=flight.arrival_airport,
+                departure_airport=departure_airport,
+                arrival_airport=arrival_airport,
                 aircraft=flight.aircraft if hasattr(flight, 'aircraft') and flight.aircraft else None
             )
             connections.append(connection)
