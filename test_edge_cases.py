@@ -189,7 +189,7 @@ def test_route(route_info):
         )
         
         # Get flights using Bright Data with hybrid data source
-        result = get_flights_from_filter(filter, mode="bright-data", data_source='hybrid')
+        result = get_flights_from_filter(filter, mode="bright-data")
         
         if not result or not result.flights:
             return {

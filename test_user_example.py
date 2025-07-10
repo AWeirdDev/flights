@@ -25,7 +25,7 @@ def main():
     )
     
     # Get flights
-    result = get_flights_from_filter(filter_data, mode="bright-data", data_source='hybrid')
+    result = get_flights_from_filter(filter_data, mode="bright-data")
     
     if not result:
         print("No flights found.")

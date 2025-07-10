@@ -32,7 +32,7 @@ def test_hybrid_parser():
     print("=== Testing Hybrid Parser with debug_connecting_flights2.html ===\n")
     
     try:
-        result = parse_response(response, data_source='hybrid')
+        result = parse_response(response)
         print(f"Successfully parsed {len(result.flights)} flights")
         
         # Show detailed info for first few flights
