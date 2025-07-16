@@ -1,5 +1,6 @@
 import re
 import json
+from dataclasses import dataclass
 from typing import List, Literal, Optional, Union, overload
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
@@ -15,6 +16,16 @@ from .primp import Client, Response
 
 DataSource = Literal['html', 'js']
 
+@dataclass
+class PlaywrightConfig:
+    """Configuration for Playwright browser automation.
+    
+    Args:
+        url: WebSocket endpoint (ws:// or wss://) for remote Playwright instance.
+             If None, launches local Chromium browser.
+    """
+    url: Optional[str] = None
+
 def fetch(params: dict) -> Response:
     client = Client(impersonate="chrome_126", verify=False)
     res = client.get("https://www.google.com/travel/flights", params=params)
@@ -28,6 +39,7 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: Literal['js'] = ...,
+    playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Union[DecodedResult, None]: ...
 
 @overload
@@ -37,6 +49,7 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: Literal['html'],
+    playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Result: ...
 
 def get_flights_from_filter(
@@ -45,6 +58,7 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: DataSource = 'html',
+    playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
 
@@ -67,7 +81,8 @@ def get_flights_from_filter(
     elif mode == "local":
         from .local_playwright import local_playwright_fetch
 
-        res = local_playwright_fetch(params)
+        playwright_url = playwright_config.url if playwright_config else None
+        res = local_playwright_fetch(params, playwright_url)
 
     elif mode == "bright-data":
         res = bright_data_fetch(params)
@@ -92,6 +107,7 @@ def get_flights(
     fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
+    playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Union[Result, DecodedResult, None]:
     return get_flights_from_filter(
         TFSData.from_interface(
@@ -103,6 +119,7 @@ def get_flights(
         ),
         mode=fetch_mode,
         data_source=data_source,
+        playwright_config=playwright_config,
     )
 
 
