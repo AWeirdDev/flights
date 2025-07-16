@@ -74,7 +74,8 @@ def get_flights_from_filter(
             res = fetch(params)
         except AssertionError as e:
             if mode == "fallback":
-                res = fallback_playwright_fetch(params)
+                playwright_url = playwright_config.url if playwright_config else None
+                res = fallback_playwright_fetch(params, playwright_url)
             else:
                 raise e
 
@@ -88,7 +89,8 @@ def get_flights_from_filter(
         res = bright_data_fetch(params)
 
     else:
-        res = fallback_playwright_fetch(params)
+        playwright_url = playwright_config.url if playwright_config else None
+        res = fallback_playwright_fetch(params, playwright_url)
 
     try:
         return parse_response(res, data_source)
