@@ -14,17 +14,19 @@ from .bright_data_fetch import bright_data_fetch
 from .primp import Client, Response
 
 
-DataSource = Literal['html', 'js']
+DataSource = Literal["html", "js"]
+
 
 @dataclass
 class PlaywrightConfig:
     """Configuration for Playwright browser automation.
-    
+
     Args:
         url: WebSocket endpoint (ws:// or wss://) for remote Playwright instance.
-             If None, launches local Chromium browser.
     """
-    url: Optional[str] = None
+
+    url: str
+
 
 def fetch(params: dict) -> Response:
     client = Client(impersonate="chrome_126", verify=False)
@@ -32,32 +34,41 @@ def fetch(params: dict) -> Response:
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res
 
+
 @overload
 def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
-    data_source: Literal['js'] = ...,
+    mode: Literal[
+        "common", "fallback", "force-fallback", "local", "bright-data"
+    ] = "common",
+    data_source: Literal["js"] = ...,
     playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Union[DecodedResult, None]: ...
 
+
 @overload
 def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
-    data_source: Literal['html'],
+    mode: Literal[
+        "common", "fallback", "force-fallback", "local", "bright-data"
+    ] = "common",
+    data_source: Literal["html"],
     playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Result: ...
+
 
 def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
-    data_source: DataSource = 'html',
+    mode: Literal[
+        "common", "fallback", "force-fallback", "local", "bright-data"
+    ] = "common",
+    data_source: DataSource = "html",
     playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
@@ -106,9 +117,11 @@ def get_flights(
     trip: Literal["round-trip", "one-way", "multi-city"],
     passengers: Passengers,
     seat: Literal["economy", "premium-economy", "business", "first"],
-    fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    fetch_mode: Literal[
+        "common", "fallback", "force-fallback", "local", "bright-data"
+    ] = "common",
     max_stops: Optional[int] = None,
-    data_source: DataSource = 'html',
+    data_source: DataSource = "html",
     playwright_config: Optional[PlaywrightConfig] = None,
 ) -> Union[Result, DecodedResult, None]:
     return get_flights_from_filter(
@@ -145,11 +158,11 @@ def parse_response(
 
     parser = LexborHTMLParser(r.text)
 
-    if data_source == 'js':
-        script = parser.css_first(r'script.ds\:1').text()
+    if data_source == "js":
+        script = parser.css_first(r"script.ds\:1").text()
 
-        match = re.search(r'^.*?\{.*?data:(\[.*\]).*\}', script)
-        assert match, 'Malformed js data, cannot find script data'
+        match = re.search(r"^.*?\{.*?data:(\[.*\]).*\}", script)
+        assert match, "Malformed js data, cannot find script data"
         data = json.loads(match.group(1))
         return ResultDecoder.decode(data) if data is not None else None
 
