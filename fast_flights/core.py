@@ -107,7 +107,9 @@ def get_flights_from_filter(
         return parse_response(res, data_source)
     except RuntimeError as e:
         if mode == "fallback":
-            return get_flights_from_filter(filter, mode="force-fallback")
+            return get_flights_from_filter(
+                filter, mode="force-fallback", playwright_config=playwright_config
+            )
         raise e
 
 
