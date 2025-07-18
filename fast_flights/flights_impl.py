@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 AIRLINE_ALLIANCES = ["SKYTEAM", "STAR_ALLIANCE", "ONEWORLD"]
 
+
 class FlightData:
     """Represents flight data.
 
@@ -194,11 +195,14 @@ class TFSData:
             seat=seat_t,
             trip=trip_t,
             passengers=passengers,
-            max_stops=max_stops  # Pass max_stops into TFSData
+            max_stops=max_stops,  # Pass max_stops into TFSData
         )
 
     def __repr__(self) -> str:
-        return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+        return (
+            f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+        )
+
 
 @dataclass
 class ItinerarySummary:
@@ -207,7 +211,7 @@ class ItinerarySummary:
     currency: str
 
     @classmethod
-    def from_b64(cls, b64_string: str) -> 'ItinerarySummary':
+    def from_b64(cls, b64_string: str) -> "ItinerarySummary":
         raw = base64.b64decode(b64_string)
         pb = PB.ItinerarySummary()
         pb.ParseFromString(raw)
