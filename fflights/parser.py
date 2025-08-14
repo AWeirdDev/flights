@@ -1,6 +1,10 @@
+from dataclasses import dataclass
 from typing import Literal
+
 import rjsonc
 from selectolax.lexbor import LexborHTMLParser
+
+from .model import Airline, Alliance, Metadata
 
 
 def parse(html: str, *, source: Literal["js", "html"] = "js"):
@@ -8,10 +12,22 @@ def parse(html: str, *, source: Literal["js", "html"] = "js"):
 
     # find js
     script = parser.css_first(r"script.ds\:1")
-    parse_js(script.text())
+    return parse_js(script.text())
 
 
+# Data discovery by @kftang, huge shout out!
 def parse_js(js: str):
-    json = js.split("data:", 1)[1].rstrip("); ")
+    json = js.split("data:", 1)[1].rsplit(",", 1)[0]
     data = rjsonc.loads(json)
-    print(data)
+
+    alliances = []
+    airlines = []
+    alliances_data, airlines_data = data[7][1]
+
+    for code, name in alliances_data:
+        alliances.append(Alliance(code=code, name=name))
+
+    for code, name in airlines_data:
+        airlines.append(Airline(code=code, name=name))
+
+    return Metadata(alliances=alliances, airlines=airlines)

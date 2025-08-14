@@ -9,5 +9,6 @@ q = query(
         )
     ],
     currency="TWD",
+    language="zh-TW",
 )
-get_flights(q)
+print(get_flights(q))

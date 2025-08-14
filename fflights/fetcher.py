@@ -2,6 +2,7 @@ from typing import Optional, Union
 from primp import Client
 
 from .querying import Query, StrQuery, StrQueryHolder, str_query
+from .parser import parse
 
 URL = "https://www.google.com/travel/flights"
 
@@ -31,4 +32,4 @@ def get_flights(
         params = {"q": q}
 
     res = client.get(URL, params=params)
-    print(res.text_markdown)
+    return parse(res.text, source="js")
