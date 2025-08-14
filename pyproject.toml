@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "fast-flights"
-version = "2.2"
+version = "2.3-dev"
 description = "The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python."
 keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport"]
 authors = [
@@ -17,11 +17,12 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
   "primp",
   "protobuf>=5.27.0",
   "selectolax",
+  "rjsonc"
 ]
 
 [project.optional-dependencies]
@@ -40,7 +41,7 @@ packages = [
 ]
 
 [tool.pyright]
-pythonVersion = '3.8'
+pythonVersion = '3.9'
 
 [dependency-groups]
 dev = [

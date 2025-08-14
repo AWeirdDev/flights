@@ -1,0 +1,2 @@
+selectolax>=0.3.33
+protobuf>=6.31.1
