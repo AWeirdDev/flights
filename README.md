@@ -1,6 +1,6 @@
-Unstable.
+Learn about [v3.0-dev](https://github.com/AWeirdDev/flights/discussions/72), which may be more reliable. Drop your ideas in the comments to let me know what I can do better.
 
-<br /><br />
+<br /><br /><br />
 <div align="center">
 
 # ✈️ fast-flights
