@@ -1,14 +1,4 @@
-from fflights import FlightQuery, query, get_flights
+from fflights import query, get_flights, str_query
+from fflights.querying import FlightQuery, Passengers
 
-q = query(
-    flights=[
-        FlightQuery(
-            date="2025-12-22",
-            from_airport="MYJ",
-            to_airport="TPE",
-        )
-    ],
-    currency="TWD",
-    language="zh-TW",
-)
-print(get_flights(q))
+print(get_flights("Flights from TPE to MYJ on 2025-12-22 one way economy class"))
