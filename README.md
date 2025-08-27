@@ -1,4 +1,4 @@
-Learn about [v3.0-dev](https://github.com/AWeirdDev/flights/discussions/72), which may be more reliable. Drop your ideas in the comments to let me know what I can do better.
+Try out the dev version: [**Pypi (`3.0rc0`)**](https://pypi.org/project/fast-flights/3.0rc0/)
 
 <br /><br /><br />
 <div align="center">
