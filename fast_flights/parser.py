@@ -5,9 +5,9 @@ from .model import (
     Airline,
     Airport,
     Alliance,
-    JsCarbonEmission,
-    JsFlights,
-    JsSingleFlight,
+    CarbonEmission,
+    Flights,
+    SingleFlight,
     JsMetadata,
     SimpleDatetime,
 )
@@ -49,6 +49,7 @@ def parse_js(js: str):
     flights = MetaList()
     for k in data[3][0]:
         flight = k[0]
+        price = k[1][0][1]
 
         typ = flight[0]
         airlines = flight[1]
@@ -72,7 +73,7 @@ def parse_js(js: str):
             duration = single_flight[11]
 
             sg_flights.append(
-                JsSingleFlight(
+                SingleFlight(
                     from_airport=from_airport,
                     to_airport=to_airport,
                     departure=departure,
@@ -88,11 +89,12 @@ def parse_js(js: str):
         typical_carbon_emission = extras[8]
 
         flights.append(
-            JsFlights(
-                typ=typ,
+            Flights(
+                type=typ,
+                price=price,
                 airlines=airlines,
                 flights=sg_flights,
-                carbon=JsCarbonEmission(
+                carbon=CarbonEmission(
                     typical_on_route=typical_carbon_emission, emission=carbon_emission
                 ),
             )

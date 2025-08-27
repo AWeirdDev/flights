@@ -1,20 +1,18 @@
-from .cookies_impl import Cookies
-from .core import get_flights_from_filter, get_flights
-from .filter import create_filter
-from .flights_impl import Airport, FlightData, Passengers, TFSData
-from .schema import Flight, Result
-from .search import search_airport
+from .querying import (
+    FlightQuery,
+    Query,
+    Passengers,
+    create_query,
+    create_query as create_filter,  # alias
+)
+from .fetcher import get_flights, fetch_flights_html
 
 __all__ = [
-    "Airport",
-    "TFSData",
-    "create_filter",
-    "FlightData",
+    "FlightQuery",
+    "Query",
     "Passengers",
-    "get_flights_from_filter",
-    "Result",
-    "Flight",
-    "search_airport",
-    "Cookies",
+    "create_query",
+    "create_filter",
     "get_flights",
+    "fetch_flights_html",
 ]

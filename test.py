@@ -1,12 +1,18 @@
-from fflights import parse
-from primp import Client
+from fast_flights import FlightQuery, Passengers, create_query, get_flights
+from pprint import pprint
 
-client = Client()
-res = client.get(
-    "https://www.google.com/travel/flights/search?tfs=CBwQAhooEgoyMDI1LTA5LTEwagwIAhIIL20vMGZ0a3hyDAgDEggvbS8wMTU2cRooEgoyMDI1LTA5LTEyagwIAxIIL20vMDE1NnFyDAgCEggvbS8wZnRreEABSAFwAYIBCwj___________8BmAEB"
+query = create_query(
+    flights=[
+        FlightQuery(
+            date="2025-12-22",
+            from_airport="MYJ",
+            to_airport="TPE",
+        ),
+    ],
+    seat="economy",
+    trip="one-way",
+    passengers=Passengers(adults=1),
+    language="zh-TW",
 )
-
-with open(".html", "wb") as f:
-    f.write(res.content)
-
-parse(res.text)
+res = get_flights(query)
+pprint(res)

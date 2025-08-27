@@ -33,7 +33,7 @@ class SimpleDatetime:
 
 
 @dataclass
-class JsSingleFlight:
+class SingleFlight:
     from_airport: Airport
     to_airport: Airport
     departure: SimpleDatetime
@@ -43,14 +43,15 @@ class JsSingleFlight:
 
 
 @dataclass
-class JsCarbonEmission:
+class CarbonEmission:
     typical_on_route: Annotated[int, "(grams)"]
     emission: Annotated[int, "(grams)"]
 
 
 @dataclass
-class JsFlights:
-    typ: Union[str, Literal["multi"]]
+class Flights:
+    type: Union[str, Literal["multi"]]
+    price: int
     airlines: list[str]
-    flights: list[JsSingleFlight]
-    carbon: JsCarbonEmission
+    flights: list[SingleFlight]
+    carbon: CarbonEmission

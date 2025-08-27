@@ -1,93 +1,10 @@
 from base64 import b64encode
+from datetime import datetime as Datetime
 from dataclasses import dataclass
-from typing import Annotated, Literal, Optional, Tuple, Union
-from typing_extensions import Unpack
+from typing import Literal, Optional, Union
 
 from .types import Currency, Language, SeatType, TripType
 from .pb.flights_pb2 import Airport, Info, Passenger, Seat, FlightData, Trip
-
-# Provided by @lookacat (issue: #59)
-StrQuerySimple = Tuple[
-    Annotated[str, "From"],
-    Annotated[str, "To"],
-    Annotated[str, "Date"],
-    Annotated[TripType, "Trip type"],
-    Annotated[SeatType, "Seat type"],
-]
-LangAndCurr = Tuple[
-    Annotated[Union[Literal[""], Language, str], "Language"],
-    Annotated[Union[Literal[""], Currency, str], "Currency"],
-]
-StrQueryAdvanced = Tuple[Unpack[StrQuerySimple], Unpack[LangAndCurr]]
-StrQueryCustom = Tuple[str, Unpack[LangAndCurr]]
-
-StrQuery = Union[StrQuerySimple, StrQueryAdvanced, StrQueryCustom]
-
-
-@dataclass
-class StrQueryHolder:
-    q: str
-    language: str
-    currency: str
-
-    def params(self) -> dict[str, str]:
-        return {"q": self.q, "hl": self.language, "curr": self.currency}
-
-
-def str_query(t: StrQuery) -> StrQueryHolder:
-    """Create a str-based query from a tuple.
-
-    Example:
-
-    ```python
-    # custom (recommended)
-    str_query((
-        "Flights from TPE to MYJ on 2025-12-22 one way economy class",
-        "en-US",
-        "USD"
-    ))
-
-    # simple (not really)
-    str_query((
-        "TPE",  # from
-        "MYJ",  # to
-        "2025-12-22",  # date
-        "one-way",  # trip type
-        "economy",  # seat type
-    ))
-
-    # + language & currency
-    str_query((
-        "TPE",  # from
-        "MYJ",  # to
-        "2025-12-22",  # date
-        "one-way",  # trip type
-        "economy",  # seat type
-
-        "en-US",  # language
-        "USD"  # currency
-    ))
-    ```
-    """
-
-    if len(t) == 5:
-        return StrQueryHolder(
-            q=f"Flights to {t[1]} from {t[0]} on {t[2]} {t[3].replace('-', ' ')} {t[4].replace('-', ' ')} class",
-            language="",
-            currency="",
-        )
-
-    elif len(t) == 7:
-        return StrQueryHolder(
-            f"Flights to {t[1]} from {t[0]} on {t[2]} {t[3].replace('-', ' ')} {t[4].replace('-', ' ')} class",
-            language=t[5],
-            currency=t[6],
-        )
-
-    elif len(t) == 3:
-        return StrQueryHolder(t[0], language=t[1], currency=t[2])
-
-    raise RuntimeError("unreachable! (unknown str query base)")
 
 
 @dataclass
@@ -142,15 +59,20 @@ class Query:
 
 @dataclass
 class FlightQuery:
-    date: str
+    date: Union[str, Datetime]
     from_airport: str
     to_airport: str
     max_stops: Optional[int] = None
     airlines: Optional[list[str]] = None
 
     def pb(self) -> FlightData:
+        if isinstance(self.date, str):
+            date = self.date
+        else:
+            date = self.date.strftime("%Y-%m-%d")
+
         return FlightData(
-            date=self.date,
+            date=date,
             from_airport=Airport(airport=self.from_airport),
             to_airport=Airport(airport=self.to_airport),
             max_stops=self.max_stops,
@@ -208,7 +130,7 @@ TRIP_LOOKUP = {
 }
 
 
-def query(
+def create_query(
     *,
     flights: list[FlightQuery],
     seat: SeatType = "economy",
