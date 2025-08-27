@@ -7,3 +7,5 @@
 
 # no judging
 protoc.exe
+
+dist/

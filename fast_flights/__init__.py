@@ -1,3 +1,5 @@
+from . import integrations
+
 from .querying import (
     FlightQuery,
     Query,
@@ -15,4 +17,5 @@ __all__ = [
     "create_filter",
     "get_flights",
     "fetch_flights_html",
+    "integrations",
 ]

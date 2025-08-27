@@ -6,7 +6,14 @@ import fast_flights
 ```
 
 **Integrations**:
-- Bright data
+Bright data:
+
+```python
+from fast_flights import get_flights
+from fast_flights.integrations import BrightData
+
+get_flights(..., integration=BrightData())
+```
 
 ***
 
