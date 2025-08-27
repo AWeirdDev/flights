@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from .primp import Client
 
@@ -26,7 +26,23 @@ asyncio.run(main())
 """
 
 
-def fallback_playwright_fetch(params: dict) -> Any:
+def fallback_playwright_fetch(params: dict, playwright_url: Optional[str] = None) -> Any:
+    """
+    Fetch Google Flights data using try.playwright.tech service or local playwright.
+    
+    Args:
+        params: Query parameters for the Google Flights URL
+        playwright_url: WebSocket endpoint for remote Playwright. If provided, uses local playwright instead of try.playwright.tech
+    
+    Returns:
+        DummyResponse object with fetched content
+    """
+    if playwright_url:
+        # Use local playwright with the specified URL
+        from .local_playwright import local_playwright_fetch
+        return local_playwright_fetch(params, playwright_url)
+    
+    # Original fallback behavior using try.playwright.tech
     client = Client(impersonate="chrome_100", verify=False)
 
     res = client.post(
