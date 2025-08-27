@@ -4,6 +4,7 @@ from primp import Client
 
 from .querying import Query
 from .parser import MetaList, parse
+from .integrations import Integration
 
 URL = "https://www.google.com/travel/flights"
 
@@ -43,37 +44,53 @@ def get_flights(q: Query, /, *, proxy: Optional[str] = None):
     """
 
 
-def get_flights(q: Union[Query, str], /, *, proxy: Optional[str] = None) -> MetaList:
+def get_flights(
+    q: Union[Query, str],
+    /,
+    *,
+    proxy: Optional[str] = None,
+    integration: Optional[Integration] = None,
+) -> MetaList:
     """Get flights.
 
     Args:
         q: The query.
         proxy (str, optional): Proxy.
     """
-    html = fetch_flights_html(q, proxy=proxy)
+    html = fetch_flights_html(q, proxy=proxy, integration=integration)
     return parse(html)
 
 
-def fetch_flights_html(q: Union[Query, str], /, *, proxy: Optional[str] = None) -> str:
+def fetch_flights_html(
+    q: Union[Query, str],
+    /,
+    *,
+    proxy: Optional[str] = None,
+    integration: Optional[Integration] = None,
+) -> str:
     """Fetch flights and get the **HTML**.
 
     Args:
         q: The query.
         proxy (str, optional): Proxy.
     """
-    client = Client(
-        impersonate="chrome_133",
-        impersonate_os="macos",
-        referer=True,
-        proxy=proxy,
-        cookie_store=True,
-    )
+    if integration is None:
+        client = Client(
+            impersonate="chrome_133",
+            impersonate_os="macos",
+            referer=True,
+            proxy=proxy,
+            cookie_store=True,
+        )
 
-    if isinstance(q, Query):
-        params = q.params()
+        if isinstance(q, Query):
+            params = q.params()
+
+        else:
+            params = {"q": q}
+
+        res = client.get(URL, params=params)
+        return res.text
 
     else:
-        params = {"q": q}
-
-    res = client.get(URL, params=params)
-    return res.text
+        return integration.fetch_html(q)

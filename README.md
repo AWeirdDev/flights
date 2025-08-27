@@ -2,9 +2,11 @@
 You're viewing the dev branch.
 
 ```python
-import fflights
+import fast_flights
 ```
 
+**Integrations**:
+- Bright data
 
 ***
 
