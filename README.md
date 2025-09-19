@@ -1,6 +1,9 @@
+> **Note:** This is a fork of the original [fast-flights](https://github.com/AWeirdDev/flights) library, with added features.
+
 Try out the dev version: [**Pypi (`3.0rc0`)**](https://pypi.org/project/fast-flights/3.0rc0/)
 
 <br /><br /><br />
+
 <div align="center">
 
 # ✈️ fast-flights
@@ -16,6 +19,7 @@ $ pip install fast-flights
 </div>
 
 ## Basics
+
 **TL;DR**: To use `fast-flights`, you'll first create a filter (for `?tfs=`) to perform a request.
 Then, add `flight_data`, `trip`, `seat`, `passengers` to use the API directly.
 
@@ -69,16 +73,19 @@ Airport.TAIPEI
 ```
 
 ## What's new
+
 - `v2.0` – New (much more succinct) API, fallback support for Playwright serverless functions, and [documentation](https://aweirddev.github.io/flights)!
 - `v2.2` - Now supports **local playwright** for sending requests.
 
 ## Cookies & consent
+
 The EU region is a bit tricky to solve for now, but the fallback support should be able to handle it.
 
 ## Contributing
+
 Contributing is welcomed! I probably won't work on this project unless there's a need for a major update, but boy howdy do I love pull requests.
 
-***
+---
 
 ## How it's made
 
@@ -89,8 +96,7 @@ The other day, I was making a chat-interface-based trip recommendation app and w
 
 The results? Bad. It seems like they discontinued this service and it now lives in the Graveyard of Google.
 
-> <sup><a href="https://duffel.com/blog/google-flights-api" target="_blank">🧏‍♂️ <b>duffel.com</b></a></sup><br />
-> <sup><i>Google Flights API: How did it work & what happened to it?</i></b>
+> <sup><a href="https://duffel.com/blog/google-flights-api" target="_blank">🧏‍♂️ <b>duffel.com</b></a></sup><br /> > <sup><i>Google Flights API: How did it work & what happened to it?</i></b>
 >
 > The Google Flights API offered developers access to aggregated airline data, including flight times, availability, and prices. Over a decade ago, Google announced the acquisition of ITA Software Inc. which it used to develop its API. **However, in 2018, Google ended access to the public-facing API and now only offers access through the QPX enterprise product**.
 
@@ -115,9 +121,9 @@ Life tells me to never give up. Let's just take a look at their URL params...
 https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI0LTA1LTI4agcIARIDVFBFcgcIARIDTVlKGh4SCjIwMjQtMDUtMzBqBwgBEgNNWUpyBwgBEgNUUEVAAUgBcAGCAQsI____________AZgBAQ&hl=en
 ```
 
-| Param | Content | My past understanding |
-|-------|---------|-----------------------|
-| hl    | en      | Sets the language.    |
+| Param | Content                           | My past understanding |
+| ----- | --------------------------------- | --------------------- |
+| hl    | en                                | Sets the language.    |
 | tfs   | CBwQAhoeEgoyMDI0LTA1LTI4agcIARID… | What is this???? 🤮🤮 |
 
 I removed the `?tfs=` parameter and found out that this is the control of our request! And it looks so base64-y.
@@ -131,7 +137,7 @@ Or maybe it's some kind of a **data-storing method** Google uses? What if it's s
 
 > 🐣 **Result**<br />
 > Solution: The Power of **Protocol Buffers**
-> 
+>
 > LinkedIn turned to Protocol Buffers, often referred to as **protobuf**, a binary serialization format developed by Google. The key advantage of Protocol Buffers is its efficiency, compactness, and speed, making it significantly faster than JSON for serialization and deserialization.
 
 Gotcha, Protobuf! Let's feed it to an online decoder and see how it does:
@@ -139,8 +145,7 @@ Gotcha, Protobuf! Let's feed it to an online decoder and see how it does:
 > 🔎 **Search** <br />
 > protobuf decoder
 
-> 🐣 **Result**<br />
-> [protobuf-decoder.netlify.app](https://protobuf-decoder.netlify.app)
+> 🐣 **Result**<br /> > [protobuf-decoder.netlify.app](https://protobuf-decoder.netlify.app)
 
 I then pasted the Base64-encoded string to the decoder and no way! It DID return valid data!
 
@@ -172,7 +177,7 @@ It works! Now, I won't consider myself an "experienced Protobuf developer" but r
 
 I have no idea what I wrote but... it worked! And here it is, `fast-flights`.
 
-***
+---
 
 <div align="center">
 
