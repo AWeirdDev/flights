@@ -147,6 +147,16 @@ def parse_response(
                 strip=True
             )
 
+            # Logo
+            logo = item.css_first("div .EbY4Pc.P2UJoe")
+            style = logo.attributes.get('style', '')
+
+            match = re.search(r'--travel-primitives-themeable-image-default:\s*url\(([^)]+)\)', str(style))
+            if match:
+                logo_url = match.group(1)
+            else:
+                logo_url = None
+
             # Get departure & arrival time
             dp_ar_node = item.css("span.mv1WYe div")
             try:
@@ -182,6 +192,7 @@ def parse_response(
                 {
                     "is_best": is_best_flight,
                     "name": name,
+                    "logo": logo_url,
                     "departure": " ".join(departure_time.split()),
                     "arrival": " ".join(arrival_time.split()),
                     "arrival_time_ahead": time_ahead,
