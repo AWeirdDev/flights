@@ -5,7 +5,7 @@
 # 🚀 Quick start
 
 ```bash
-pip install fast-flights
+pip install git+https://github.com/swiftlysingh/flights-cli
 
 flights-cli --round \
   --segment "date=2026-01-01 from=DEL to=SFO" \
@@ -18,7 +18,7 @@ flights-cli --round \
 Install the CLI alongside the Python package:
 
 ```bash
-pip install fast-flights
+pip install git+https://github.com/swiftlysingh/flights-cli
 ```
 
 This installs the `flights-cli` executable and exposes the module entry point so you can run it directly as well:
