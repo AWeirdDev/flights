@@ -1,4 +1,4 @@
-# :material-console-line: flights-cli
+# flights-cli
 
 `flights-cli` is the command-line interface for the `fast-flights` library.
 
