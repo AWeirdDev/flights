@@ -30,6 +30,7 @@ result: Result = get_flights(
     seat="economy",
     passengers=Passengers(adults=2, children=1, infants_in_seat=0, infants_on_lap=0),
     fetch_mode="fallback",
+    price_type="cheapest",
 )
 
 print(result)

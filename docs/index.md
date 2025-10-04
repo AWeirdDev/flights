@@ -26,7 +26,8 @@ result: Result = get_flights(
     trip="one-way",# (2)!
     seat="economy",# (3)!
     passengers=Passengers(adults=2, children=1, infants_in_seat=0, infants_on_lap=0),# (4)!
-    fetch_mode="fallback",#(5)!
+    fetch_mode="fallback",# (5)!
+    price_type="cheapest",# (6)!
 )
 
 print(result)
@@ -37,6 +38,7 @@ print(result)
 3. :material-seat: Money-spending time! This specifies the seat type, which is `economy`, `premium-economy`, `business`, or `first`.
 4. :fontawesome-solid-people-line: Nice interface, eh? This specifies the number of a specific passenger type.
 5. :fontawesome-solid-person-falling: Sometimes, the data is built on demand on the client-side, while the core of `fast-flights` is built around scrapers from the ground up. We support fallbacks that run Playwright serverless functions to fetch for us instead. You could either specify `common` (default), `fallback` (recommended), or `force-fallback` (100% serverless Playwright). You do not need to install Playwright in order for this to work.
+6. :material-cash-multiple: This specifies the price type. Choose `"best"` (default) for official airline prices, or `"cheapest"` for the lowest prices from travel agencies. The `"cheapest"` option searches across multiple booking sites to find you the best deal!
 
 ## How it's made
 
