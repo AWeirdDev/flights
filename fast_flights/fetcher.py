@@ -130,20 +130,32 @@ def fetch_flights_html(
 
                 logger.debug(f"Sending request to {URL} with params: {params}")
                 res = client.get(URL, params=params)
-                res.raise_for_status()  # Raise HTTPError for bad responses
+                
+                # Check status code directly since primp's client might not have raise_for_status
+                if res.status_code >= 400:
+                    error_msg = f"Flight data API returned status code {res.status_code}"
+                    logger.error(error_msg)
+                    raise APIError(error_msg)
                 
                 if not res.text:
-                    raise APIError("Received empty response from the flight data source")
+                    error_msg = "Received empty response from the flight data source"
+                    logger.error(error_msg)
+                    raise APIError(error_msg)
                     
                 return res.text
                 
+            except APIError:
+                # Re-raise APIError as is
+                raise
+            except ValueError as e:
+                # Re-raise ValueError as is
+                logger.error(f"Invalid query: {str(e)}")
+                raise
             except Exception as e:
-                logger.error(f"Error fetching flight data: {str(e)}")
-                if hasattr(e, 'response') and hasattr(e.response, 'status_code'):
-                    raise APIError(
-                        f"Flight data API returned status code {e.response.status_code}: {str(e)}"
-                    ) from e
-                raise APIConnectionError(f"Failed to connect to flight data source: {str(e)}") from e
+                # Handle other exceptions
+                error_msg = f"Failed to connect to flight data source: {str(e)}"
+                logger.error(error_msg)
+                raise APIConnectionError(error_msg) from e
 
         else:
             logger.debug("Using integration for fetching flight data")
