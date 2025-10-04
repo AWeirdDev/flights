@@ -1,0 +1,48 @@
+---
+globs: docs/*.md,mkdocs.yml,README.md
+---
+
+# Documentation Guidelines
+
+## Documentation Structure
+- [README.md](mdc:README.md) - Main project documentation with examples and background
+- [docs/](mdc:docs/) - Extended documentation using MkDocs
+- [mkdocs.yml](mdc:mkdocs.yml) - MkDocs configuration
+
+## Documentation Files
+- [docs/index.md](mdc:docs/index.md) - Documentation homepage
+- [docs/airports.md](mdc:docs/airports.md) - Airport enum usage and examples  
+- [docs/fallbacks.md](mdc:docs/fallbacks.md) - Fallback strategy documentation
+- [docs/filters.md](mdc:docs/filters.md) - Filter creation guide
+- [docs/local.md](mdc:docs/local.md) - Local Playwright setup and usage
+
+## Building Documentation
+```bash
+mkdocs build
+mkdocs serve  # For local preview
+```
+
+## Documentation Style
+- Use clear, concise language
+- Include code examples with type annotations
+- Explain the "why" not just the "how"
+- Add real-world use cases
+- Keep examples up-to-date with the API
+
+## README.md
+- Keep the README focused on getting started quickly
+- Include installation instructions
+- Show a complete, working example
+- Link to full documentation
+- Explain the project's unique value (Protobuf-based, fast, strongly-typed)
+
+## Code Examples in Docs
+- All code examples should be tested and working
+- Use realistic data (valid airports, future dates)
+- Show type annotations to highlight strong typing
+- Demonstrate error handling where relevant
+
+## Changelog
+- Document major changes in README
+- Use version numbers to track API changes
+- Highlight breaking changes clearly

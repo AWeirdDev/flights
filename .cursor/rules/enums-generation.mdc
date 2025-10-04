@@ -1,0 +1,53 @@
+---
+globs: enums/*.py,enums/*.csv,fast_flights/_generated_enum.py
+---
+
+# Airport Enum Generation
+
+## Overview
+The project auto-generates a Python enum of all airports from a CSV file to provide autocomplete functionality for airport codes.
+
+## Files
+- [enums/airports.csv](mdc:enums/airports.csv) - Source data for airports (IATA codes and names)
+- [enums/generate_enums.py](mdc:enums/generate_enums.py) - Generator script
+- [fast_flights/_generated_enum.py](mdc:fast_flights/_generated_enum.py) - Generated Airport enum
+
+## Regenerating Enums
+To regenerate the airport enums after updating the CSV:
+```bash
+python enums/generate_enums.py
+```
+
+## CSV Format
+The airports.csv should have:
+- First row: headers
+- Each subsequent row: airport data with IATA code and airport name
+
+## Generated Code
+- Never manually edit `fast_flights/_generated_enum.py`
+- The generated `Airport` enum provides IDE autocomplete
+- Each enum value is the IATA 3-letter code
+
+## Usage
+```python
+from fast_flights import FlightData, Airport
+
+# With enum (provides autocomplete)
+flight = FlightData(
+    date="2025-01-01",
+    from_airport=Airport.TAIPEI_SONGSHAN_AIRPORT,  # Autocomplete available!
+    to_airport=Airport.TOKYO_HANEDA_AIRPORT
+)
+
+# With string (also works)
+flight = FlightData(
+    date="2025-01-01", 
+    from_airport="TPE",
+    to_airport="HND"
+)
+```
+
+## Adding New Airports
+1. Add the airport to [enums/airports.csv](mdc:enums/airports.csv)
+2. Run `python enums/generate_enums.py`
+3. The new airport will be available in the `Airport` enum

@@ -1,0 +1,41 @@
+---
+globs: *.py,*.pyi
+---
+
+# Python Coding Conventions
+
+## Type Annotations
+- Always use type hints for function parameters and return values
+- Use `from typing import` for complex types (Literal, Optional, Union, List, etc.)
+- Use `TYPE_CHECKING` for circular imports and type-only imports
+- Prefer `Optional[T]` over `T | None` for Python 3.8 compatibility
+- Use `Union[A, B]` instead of `A | B` for Python 3.8 compatibility
+
+## Python Version
+- Target Python 3.8+ as specified in [pyproject.toml](mdc:pyproject.toml)
+- Avoid using features only available in Python 3.9+
+
+## Dataclasses and Slots
+- Use `__slots__` for performance-critical classes (e.g., `FlightData`)
+- Use `@dataclass` from dataclasses module for simple data containers
+- Prefer explicit `__init__` methods when custom validation is needed
+
+## Overloads
+- Use `@overload` decorator from typing module for functions with different return types based on parameters
+- Always provide a non-overload implementation as the final definition
+
+## Assertions and Validation
+- Use `assert` for invariants and preconditions
+- Raise `ValueError` for invalid user input
+- Raise `RuntimeError` for unexpected runtime states
+- Include descriptive error messages
+
+## Imports
+- Group imports: standard library, third-party, local
+- Use absolute imports from package root (e.g., `from .schema import Result`)
+- Keep `__all__` exports updated in `__init__.py` files
+
+## Documentation
+- Use docstrings for public functions and classes
+- Follow Google-style docstring format with Args and Returns sections
+- Include type information in docstrings where helpful for users
