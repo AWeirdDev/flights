@@ -90,35 +90,42 @@ class FlightQuery:
     airlines: Optional[list[str]] = None
 
     def __post_init__(self):
-        """Validate the flight query parameters after initialization."""
-        # Convert to strings in case we get non-string inputs
-        self.from_airport = str(self.from_airport).strip().upper()
-        self.to_airport = str(self.to_airport).strip().upper()
+        """Validate and normalize flight query parameters after initialization.
         
-        # Validate the flight query
-        try:
-            validate_flight_query(self.from_airport, self.to_airport, self.date, self.max_stops)
+        Raises:
+            AirportCodeError: If airport codes are invalid
+            DateFormatError: If date format is invalid
+            FlightQueryError: For other validation errors
+        """
+        # Validate and normalize flight query parameters
+        self.from_airport, self.to_airport = validate_flight_query(
+            self.from_airport, 
+            self.to_airport, 
+            self.date, 
+            self.max_stops
+        )
+        
+        # Validate airlines if provided
+        if self.airlines is not None:
+            if not isinstance(self.airlines, (list, tuple)):
+                raise FlightQueryError("Airlines must be a list or tuple")
             
-            # Validate airlines if provided
-            if self.airlines is not None:
-                if not isinstance(self.airlines, (list, tuple)) or not all(
-                    isinstance(airline, str) and len(airline) == 2 
-                    for airline in self.airlines
-                ):
+            airlines = []
+            for i, airline in enumerate(self.airlines):
+                if not isinstance(airline, str):
                     raise FlightQueryError(
-                        "airlines must be a list of 2-letter IATA airline codes"
+                        f"Airline code at index {i} must be a string, got {type(airline).__name__}"
                     )
                 
-                # Clean and validate each airline code
-                self.airlines = [airline.strip().upper() for airline in self.airlines]
-                for airline in self.airlines:
-                    if not re.match(r'^[A-Z]{2}$', airline):
-                        raise FlightQueryError(
-                            f"Invalid airline code: {airline}. Must be 2 uppercase letters"
-                        )
-                        
-        except (ValidationError, ValueError) as e:
-            raise FlightQueryError(str(e)) from e
+                airline = airline.strip().upper()
+                if not re.match(r'^[A-Z]{2}$', airline):
+                    raise FlightQueryError(
+                        f"Invalid airline code: '{airline}'. Must be 2 uppercase letters"
+                    )
+                
+                airlines.append(airline)
+            
+            self.airlines = airlines
 
     def pb(self) -> FlightData:
         """Convert this query to a protobuf FlightData message.
@@ -161,34 +168,24 @@ class Passengers:
     def __init__(
         self,
         *,
-        adults: int = 0,
+        adults: int = 1,  # Changed default to 1 to match DEFAULT_PASSENGERS
         children: int = 0,
         infants_in_seat: int = 0,
         infants_on_lap: int = 0,
     ):
-        # Convert to integers in case we get strings
-        try:
-            adults = int(adults)
-            children = int(children)
-            infants_in_seat = int(infants_in_seat)
-            infants_on_lap = int(infants_on_lap)
-        except (TypeError, ValueError) as e:
-            raise PassengerError("Passenger counts must be integers") from e
-            
-        # Validate passenger counts are non-negative
-        if any(count < 0 for count in (adults, children, infants_in_seat, infants_on_lap)):
-            raise PassengerError("Passenger counts cannot be negative")
+        # Convert to integers and validate
+        self.adults = int(adults) if adults is not None else 1
+        self.children = int(children) if children is not None else 0
+        self.infants_in_seat = int(infants_in_seat) if infants_in_seat is not None else 0
+        self.infants_on_lap = int(infants_on_lap) if infants_on_lap is not None else 0
             
         # Validate passenger configuration
-        try:
-            validate_passengers(adults, children, infants_in_seat, infants_on_lap)
-        except PassengerError as e:
-            raise  # Re-raise the validation error with the original message
-            
-        self.adults = adults
-        self.children = children
-        self.infants_in_seat = infants_in_seat
-        self.infants_on_lap = infants_on_lap
+        validate_passengers(
+            adults=self.adults,
+            children=self.children,
+            infants_in_seat=self.infants_in_seat,
+            infants_on_lap=self.infants_on_lap
+        )
 
     def pb(self) -> list[Passenger]:
         return [
@@ -218,11 +215,14 @@ def create_query(
     flights: list[FlightQuery],
     seat: SeatType = "economy",
     trip: TripType = "one-way",
-    passengers: Passengers = DEFAULT_PASSENGERS,
+    passengers: Optional[Passengers] = None,
     language: Union[str, Literal[""], Language] = "en-US",
     currency: Union[str, Literal[""], Currency] = "USD",
     max_stops: Optional[int] = None,
 ) -> Query:
+    # Use default passengers if not provided
+    if passengers is None:
+        passengers = DEFAULT_PASSENGERS
     """Create a query for flight search.
     
     Args:
@@ -240,34 +240,37 @@ def create_query(
     Raises:
         ValueError: If any of the input parameters are invalid.
         FlightQueryError: If there are issues with the flight queries.
+        AirportCodeError: If any airport code is invalid.
+        DateFormatError: If any date format is invalid.
+        PassengerError: If passenger configuration is invalid.
     """
-    # Validate inputs
+    # Validate required inputs
     if not isinstance(flights, (list, tuple)) or not flights:
         raise ValueError("At least one flight segment is required")
     
     if not all(isinstance(f, FlightQuery) for f in flights):
         raise ValueError("All flight segments must be FlightQuery instances")
     
+    # Validate seat type
     if seat not in SEAT_LOOKUP:
-        valid_seats = ", ".join(f"'{s}'" for s in SEAT_LOOKUP.keys())
+        valid_seats = ", ".join(f"'{s}'" for s in SEAT_LOOKUP)
         raise ValueError(f"Invalid seat type: '{seat}'. Must be one of: {valid_seats}")
     
+    # Validate trip type
     if trip not in TRIP_LOOKUP:
-        valid_trips = ", ".join(f"'{t}'" for t in TRIP_LOOKUP.keys())
+        valid_trips = ", ".join(f"'{t}'" for t in TRIP_LOOKUP)
         raise ValueError(f"Invalid trip type: '{trip}'. Must be one of: {valid_trips}")
     
+    # Validate passengers
     if not isinstance(passengers, Passengers):
         raise ValueError("passengers must be an instance of Passengers")
     
-    # Validate language and currency if provided
-    if language and not isinstance(language, str) and not isinstance(language, Language):
+    # Validate language
+    if language and not isinstance(language, (str, Language)):
         raise ValueError("language must be a string or Language enum value")
     
-    try:
-        if currency:
-            validate_currency(str(currency))
-    except ValueError as e:
-        raise ValueError(f"Invalid currency: {e}") from e
+    # Validate and normalize currency
+    currency_code = validate_currency(currency) if currency else ""
     
     # Apply max_stops to all flights if specified
     if max_stops is not None:
@@ -275,15 +278,12 @@ def create_query(
             raise ValueError("max_stops must be a non-negative integer")
         flights = [flight._setmaxstops(max_stops) for flight in flights]
     
-    # Create the query
-    try:
-        return Query(
-            flight_data=[flight.pb() for flight in flights],
-            seat=SEAT_LOOKUP[seat],
-            trip=TRIP_LOOKUP[trip],
-            passengers=passengers.pb(),
-            language=str(language) if language else "",
-            currency=str(currency) if currency else "",
-        )
-    except Exception as e:
-        raise FlightQueryError(f"Failed to create query: {str(e)}") from e
+    # Create and return the query
+    return Query(
+        flight_data=[flight.pb() for flight in flights],
+        seat=SEAT_LOOKUP[seat],
+        trip=TRIP_LOOKUP[trip],
+        passengers=passengers.pb(),
+        language=str(language) if language else "",
+        currency=currency_code,
+    )
