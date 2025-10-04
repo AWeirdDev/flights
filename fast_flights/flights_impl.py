@@ -1,6 +1,7 @@
 """Typed implementation of flights_pb2.py"""
 
 import base64
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union
 
@@ -39,6 +40,20 @@ class FlightData:
         max_stops: Optional[int] = None,
         airlines: Optional[List[str]] = None,
     ):
+        # Validate date format and ensure it's not in the past
+        try:
+            date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            raise ValueError(
+                f"Invalid date format: {date}. Date must be in YYYY-MM-DD format."
+            )
+        
+        today = datetime.now().date()
+        if date_obj < today:
+            raise ValueError(
+                f"Date cannot be in the past. Provided date: {date}, Today: {today}"
+            )
+        
         self.date = date
         self.from_airport = (
             from_airport.value if isinstance(from_airport, Airport) else from_airport
