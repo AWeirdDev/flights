@@ -1,8 +1,9 @@
 """Typed implementation of flights_pb2.py"""
 
 import base64
+from datetime import datetime
 from dataclasses import dataclass
-from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union
+from typing import Any, List, Optional, TYPE_CHECKING, Literal, Union, get_args
 
 from . import flights_pb2 as PB
 from ._generated_enum import Airport
@@ -11,6 +12,10 @@ if TYPE_CHECKING:
     PB: Any
 
 AIRLINE_ALLIANCES = ["SKYTEAM", "STAR_ALLIANCE", "ONEWORLD"]
+
+# Type aliases for validation
+TripType = Literal["round-trip", "one-way", "multi-city"]
+SeatType = Literal["economy", "premium-economy", "business", "first"]
 
 class FlightData:
     """Represents flight data.
@@ -39,6 +44,20 @@ class FlightData:
         max_stops: Optional[int] = None,
         airlines: Optional[List[str]] = None,
     ):
+        # Validate date format and ensure it's not in the past
+        try:
+            date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            raise ValueError(
+                f"Invalid date format: {date}. Date must be in YYYY-MM-DD format."
+            )
+        
+        today = datetime.now().date()
+        if date_obj < today:
+            raise ValueError(
+                f"Date cannot be in the past. Provided date: {date}, Today: {today}"
+            )
+        
         self.date = date
         self.from_airport = (
             from_airport.value if isinstance(from_airport, Airport) else from_airport
@@ -163,9 +182,9 @@ class TFSData:
     def from_interface(
         *,
         flight_data: List[FlightData],
-        trip: Literal["round-trip", "one-way", "multi-city"],
+        trip: TripType,
         passengers: Passengers,
-        seat: Literal["economy", "premium-economy", "business", "first"],
+        seat: SeatType,
         max_stops: Optional[int] = None,  # Add max_stops to the method signature
     ):
         """Use ``?tfs=`` from an interface.
@@ -177,6 +196,30 @@ class TFSData:
             seat ("economy" | "premium-economy" | "business" | "first"): Seat.
             max_stops (int, optional): Maximum number of stops.
         """
+        # Validate trip parameter
+        valid_trips = get_args(TripType)
+        if trip not in valid_trips:
+            raise ValueError(
+                f"Invalid trip type: {trip}. Must be one of {list(valid_trips)}"
+            )
+        
+        # Validate seat parameter
+        valid_seats = get_args(SeatType)
+        if seat not in valid_seats:
+            raise ValueError(
+                f"Invalid seat type: {seat}. Must be one of {list(valid_seats)}"
+            )
+        
+        # Validate flight_data
+        if not flight_data:
+            raise ValueError("flight_data must contain at least one FlightData object")
+        
+        # Validate trip-specific requirements
+        if trip == "round-trip" and len(flight_data) < 2:
+            raise ValueError(
+                f"round-trip requires at least 2 FlightData objects, but got {len(flight_data)}"
+            )
+        
         trip_t = {
             "round-trip": PB.Trip.ROUND_TRIP,
             "one-way": PB.Trip.ONE_WAY,

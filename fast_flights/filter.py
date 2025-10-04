@@ -1,12 +1,12 @@
-from typing import Literal, List, Optional
-from .flights_impl import FlightData, Passengers, TFSData
+from typing import List, Optional
+from .flights_impl import FlightData, Passengers, TFSData, TripType, SeatType
 
 def create_filter(
     *,
     flight_data: List[FlightData],
-    trip: Literal["round-trip", "one-way", "multi-city"],
+    trip: TripType,
     passengers: Passengers,
-    seat: Literal["economy", "premium-economy", "business", "first"],
+    seat: SeatType,
     max_stops: Optional[int] = None,
 ) -> TFSData:
     """Create a filter. (``?tfs=``)
