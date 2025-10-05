@@ -309,7 +309,7 @@ def create_query(
     flights: list[FlightQuery],
     seat: SeatType = "economy",
     trip: TripType = "one-way",
-    passengers: Optional[Passengers] = None,
+    passengers: Passengers = Passengers(),
     language: Union[str, Literal[""], Language] = "en-US",
     currency: Union[str, Literal[""], Currency] = "USD",
     max_stops: Optional[int] = None,
@@ -350,9 +350,6 @@ def create_query(
         ...     passengers=Passengers(adults=2, children=1)
         ... )
     """
-    # Initialize default passengers if not provided
-    if passengers is None:
-        passengers = Passengers()
     
     # Validate passengers
     if not isinstance(passengers, Passengers):
@@ -387,6 +384,6 @@ def create_query(
         seat=SEAT_LOOKUP[seat],
         trip=TRIP_LOOKUP[trip],
         passengers=passengers.to_proto(),
-        language=str(language) if language else "",
+        language=language,
         currency=currency_code,
     )

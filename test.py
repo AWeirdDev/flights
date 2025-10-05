@@ -15,5 +15,7 @@ query = create_query(
     passengers=Passengers(adults=1),
     language="en-US",
 )
+
+print(query)
 res = get_flights(query)
 pprint(res)
