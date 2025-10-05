@@ -47,4 +47,5 @@ pythonVersion = '3.9'
 dev = [
     "ipykernel>=6.29.5",
     "pip>=25.0.1",
+    "pytest>=8.0.0",
 ]
