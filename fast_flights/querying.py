@@ -2,16 +2,22 @@ import re
 from base64 import b64encode
 from datetime import datetime as Datetime
 from dataclasses import dataclass
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, TypeVar, Union, get_args, get_origin
 
 from .exceptions import (
     PassengerError,
     FlightQueryError,
-    ValidationError
 )
 from .validation import (
     validate_passengers,
     validate_flight_query,
+    validate_seat_type,
+    validate_trip_type,
+    validate_flights_list,
+    validate_airlines,
+    validate_max_stops,
+    validate_and_normalize_date,
+    validate_language,
     validate_currency
 )
 
@@ -29,8 +35,43 @@ class Query:
     passengers: list[Passenger]
     language: str
     currency: str
+    
+    def __str__(self) -> str:
+        """Return a human-readable string representation of the query."""
+        flight_info = []
+        for i, flight in enumerate(self.flight_data, 1):
+            flight_info.append(f"  Flight {i}:")
+            flight_info.append(f"    From: {flight.from_airport.airport if flight.HasField('from_airport') else 'N/A'}")
+            flight_info.append(f"    To: {flight.to_airport.airport if flight.HasField('to_airport') else 'N/A'}")
+            flight_info.append(f"    Date: {flight.date}")
+            
+            if flight.airlines:
+                flight_info.append(f"    Airlines: {', '.join(flight.airlines)}")
+            
+            if flight.HasField('max_stops'):
+                flight_info.append(f"    Max Stops: {flight.max_stops}")
+        
+        # Count passenger types
+        passenger_counts = {}
+        for p in self.passengers:
+            if p == Passenger.ADULT:
+                passenger_counts['Adults'] = passenger_counts.get('Adults', 0) + 1
+            elif p == Passenger.CHILD:
+                passenger_counts['Children'] = passenger_counts.get('Children', 0) + 1
+            elif p in (Passenger.INFANT_IN_SEAT, Passenger.INFANT_ON_LAP):
+                passenger_counts['Infants'] = passenger_counts.get('Infants', 0) + 1
+        
+        return (
+            f"Query Details:\n"
+            f"Seat Class: {self.seat}\n"
+            f"Trip Type: {self.trip}\n"
+            f"Passengers: {', '.join(f'{count} {type_}' for type_, count in passenger_counts.items() if count > 0)}\n"
+            f"Language: {self.language or 'Default'}\n"
+            f"Currency: {self.currency or 'Default'}\n"
+            f"Flights:\n" + '\n'.join(flight_info)
+        )
 
-    def pb(self) -> Info:
+    def to_proto(self) -> Info:
         """(internal) Protobuf data. (`Info`)"""
         return Info(
             data=self.flight_data,
@@ -41,7 +82,7 @@ class Query:
 
     def to_bytes(self) -> bytes:
         """Convert this query to bytes."""
-        return self.pb().SerializeToString()
+        return self.to_proto().SerializeToString()
 
     def to_str(self) -> str:
         """Convert this query to a string."""
@@ -97,49 +138,36 @@ class FlightQuery:
             DateFormatError: If date format is invalid
             FlightQueryError: For other validation errors
         """
+        # Validate and normalize date first
+        self._normalized_date = validate_and_normalize_date(self.date)
+        
         # Validate and normalize flight query parameters
         self.from_airport, self.to_airport = validate_flight_query(
             self.from_airport, 
             self.to_airport, 
-            self.date, 
+            self._normalized_date, 
             self.max_stops
         )
         
-        # Validate airlines if provided
+        # Validate and normalize airlines if provided
         if self.airlines is not None:
-            if not isinstance(self.airlines, (list, tuple)):
-                raise FlightQueryError("Airlines must be a list or tuple")
-            
-            airlines = []
-            for i, airline in enumerate(self.airlines):
-                if not isinstance(airline, str):
-                    raise FlightQueryError(
-                        f"Airline code at index {i} must be a string, got {type(airline).__name__}"
-                    )
-                
-                airline = airline.strip().upper()
-                if not re.match(r'^[A-Z]{2}$', airline):
-                    raise FlightQueryError(
-                        f"Invalid airline code: '{airline}'. Must be 2 uppercase letters"
-                    )
-                
-                airlines.append(airline)
-            
-            self.airlines = airlines
+            try:
+                self.airlines = validate_airlines(self.airlines)
+            except ValueError as e:
+                raise FlightQueryError(str(e)) from e
 
-    def pb(self) -> FlightData:
+    def to_proto(self) -> FlightData:
         """Convert this query to a protobuf FlightData message.
         
         Returns:
             FlightData: The protobuf message representing this query.
+            
+        Note:
+            All validations should be done in __post_init__.
+            This method should only convert already validated data to protobuf.
         """
-        if isinstance(self.date, str):
-            date = self.date
-        else:
-            date = self.date.strftime("%Y-%m-%d")
-
         return FlightData(
-            date=date,
+            date=self._normalized_date,
             from_airport=Airport(airport=self.from_airport),
             to_airport=Airport(airport=self.to_airport),
             max_stops=self.max_stops if self.max_stops is not None else None,
@@ -157,7 +185,7 @@ class Passengers:
     """Represents a group of passengers for a flight.
     
     Args:
-        adults: Number of adults (16+ years). At least one adult is required when traveling with children or infants.
+        adults: Number of adults (16+ years). At least one adult is required.
         children: Number of children (2-15 years).
         infants_in_seat: Number of infants (under 2 years) with their own seat.
         infants_on_lap: Number of infants (under 2 years) on an adult's lap.
@@ -165,21 +193,25 @@ class Passengers:
     Raises:
         PassengerError: If the passenger configuration is invalid.
     """
+    adults: int
+    children: int
+    infants_in_seat: int
+    infants_on_lap: int
+    
     def __init__(
         self,
         *,
-        adults: int = 1,  # Changed default to 1 to match DEFAULT_PASSENGERS
+        adults: int = 1,
         children: int = 0,
         infants_in_seat: int = 0,
         infants_on_lap: int = 0,
-    ):
-        # Convert to integers and validate
-        self.adults = int(adults) if adults is not None else 1
-        self.children = int(children) if children is not None else 0
-        self.infants_in_seat = int(infants_in_seat) if infants_in_seat is not None else 0
-        self.infants_on_lap = int(infants_on_lap) if infants_on_lap is not None else 0
+    ) -> None:
+        """Initialize and validate passenger configuration."""
+        self.adults = int(adults)
+        self.children = int(children)
+        self.infants_in_seat = int(infants_in_seat)
+        self.infants_on_lap = int(infants_on_lap)
             
-        # Validate passenger configuration
         validate_passengers(
             adults=self.adults,
             children=self.children,
@@ -187,7 +219,7 @@ class Passengers:
             infants_on_lap=self.infants_on_lap
         )
 
-    def pb(self) -> list[Passenger]:
+    def to_proto(self) -> list[Passenger]:
         return [
             *(Passenger.ADULT for _ in range(self.adults)),
             *(Passenger.CHILD for _ in range(self.children)),
@@ -196,18 +228,80 @@ class Passengers:
         ]
 
 
-DEFAULT_PASSENGERS = Passengers(adults=1)
-SEAT_LOOKUP = {
-    "economy": Seat.ECONOMY,
-    "premium-economy": Seat.PREMIUM_ECONOMY,
-    "business": Seat.BUSINESS,
-    "first": Seat.FIRST,
-}
-TRIP_LOOKUP = {
-    "round-trip": Trip.ROUND_TRIP,
-    "one-way": Trip.ONE_WAY,
-    "multi-city": Trip.MULTI_CITY,
-}
+from typing import TypeVar, Type, Any, get_origin, get_args, cast
+
+T = TypeVar('T')
+
+def _get_literal_values(tp: Any) -> tuple[str, ...]:
+    """Extract the literal values from a Literal type.
+    
+    Returns:
+        tuple[str, ...]: The literal values as strings, or empty tuple if not a Literal
+    """
+    origin = get_origin(tp)
+    if origin is not Literal:
+        return ()
+    
+    args = get_args(tp)
+    if not args:
+        return ()
+        
+    # Filter out non-string values and ensure they're strings
+    return tuple(str(arg) for arg in args if isinstance(arg, (str, int, bool, float)))
+
+def _create_enum_lookup(enum_type: Union[Type[T], Type[str]], literal_type: Any) -> dict[str, T]:
+    """Create a lookup dictionary from a Literal type to an enum or string type.
+    
+    Args:
+        enum_type: The target type (e.g., Seat, Trip, or str for direct mappings)
+        literal_type: The Literal type (e.g., SeatType, TripType, Language, Currency)
+        
+    Returns:
+        dict[str, T]: A mapping from string literals to enum values or strings of type T
+    """
+    # Get the allowed string values from the Literal type
+    literal_values = _get_literal_values(literal_type)
+    if not literal_values:
+        return {}
+    
+    # If the target type is str, create a direct mapping (for Language and Currency)
+    if enum_type is str:
+        return {value: value for value in literal_values if isinstance(value, str)}
+    
+    # For enum types, map string values to enum values
+    lookup: dict[str, T] = {}
+    for value in literal_values:
+        if not isinstance(value, str):
+            continue
+            
+        # Convert string like "premium-economy" to "PREMIUM_ECONOMY"
+        enum_name = value.upper().replace('-', '_')
+        try:
+            enum_value = getattr(enum_type, enum_name)
+            lookup[value] = enum_value
+        except AttributeError:
+            continue  # Skip if the enum value doesn't exist
+            
+    return lookup
+
+# Create lookups from Literal types to their corresponding values
+SEAT_LOOKUP = _create_enum_lookup(Seat, SeatType)
+TRIP_LOOKUP = _create_enum_lookup(Trip, TripType)
+LANGUAGE_LOOKUP = _create_enum_lookup(str, Language)
+CURRENCY_LOOKUP = _create_enum_lookup(str, Currency)
+
+# Runtime validation of the lookup tables
+def _validate_lookup(lookup: dict, type_name: str, expected_values: set) -> None:
+    """Validate that all expected values are present in the lookup."""
+    missing = expected_values - set(lookup.keys())
+    if missing:
+        raise RuntimeError(f"Missing {type_name} values for: {', '.join(sorted(missing))}")
+
+# Validate all lookups
+_validate_lookup(SEAT_LOOKUP, "Seat", set(get_args(SeatType)))
+_validate_lookup(TRIP_LOOKUP, "Trip", set(get_args(TripType)))
+_validate_lookup(LANGUAGE_LOOKUP, "Language", set(get_args(Language)))
+_validate_lookup(CURRENCY_LOOKUP, "Currency", set(get_args(Currency)))
 
 
 def create_query(
@@ -220,70 +314,79 @@ def create_query(
     currency: Union[str, Literal[""], Currency] = "USD",
     max_stops: Optional[int] = None,
 ) -> Query:
-    # Use default passengers if not provided
-    if passengers is None:
-        passengers = DEFAULT_PASSENGERS
     """Create a query for flight search.
     
     Args:
         flights: List of FlightQuery objects representing the flight segments.
+            Must contain at least one flight.
         seat: Seat type (e.g., 'economy', 'business'). Defaults to 'economy'.
-        trip: Type of trip ('one-way', 'round-trip', 'multi-city'). Defaults to 'one-way'.
-        passengers: Passengers configuration. Defaults to 1 adult.
-        language: Language code (e.g., 'en', 'es'). Empty string lets Google decide.
+        trip: Type of trip ('one-way', 'round-trip', 'multi-city'). 
+            Defaults to 'one-way'.
+        passengers: Passengers configuration. If None, defaults to 1 adult.
+        language: Language code (e.g., 'en-US', 'es'). Empty string lets Google decide.
         currency: Currency code (e.g., 'USD', 'EUR'). Empty string lets Google decide.
-        max_stops: Maximum number of stops allowed for all flights. Overrides individual flight settings.
+        max_stops: Maximum number of stops allowed for all flights. 
+            Overrides individual flight settings. Use None for no limit.
         
     Returns:
         Query: A configured Query object ready for flight search.
         
     Raises:
-        ValueError: If any of the input parameters are invalid.
         FlightQueryError: If there are issues with the flight queries.
+        ValueError: If any of the input parameters are invalid.
         AirportCodeError: If any airport code is invalid.
         DateFormatError: If any date format is invalid.
         PassengerError: If passenger configuration is invalid.
+        
+    Example:
+        >>> query = create_query(
+        ...     flights=[
+        ...         FlightQuery(
+        ...             date="2025-12-25",
+        ...             from_airport="JFK",
+        ...             to_airport="LAX"
+        ...         )
+        ...     ],
+        ...     passengers=Passengers(adults=2, children=1)
+        ... )
     """
-    # Validate required inputs
-    if not isinstance(flights, (list, tuple)) or not flights:
-        raise ValueError("At least one flight segment is required")
-    
-    if not all(isinstance(f, FlightQuery) for f in flights):
-        raise ValueError("All flight segments must be FlightQuery instances")
-    
-    # Validate seat type
-    if seat not in SEAT_LOOKUP:
-        valid_seats = ", ".join(f"'{s}'" for s in SEAT_LOOKUP)
-        raise ValueError(f"Invalid seat type: '{seat}'. Must be one of: {valid_seats}")
-    
-    # Validate trip type
-    if trip not in TRIP_LOOKUP:
-        valid_trips = ", ".join(f"'{t}'" for t in TRIP_LOOKUP)
-        raise ValueError(f"Invalid trip type: '{trip}'. Must be one of: {valid_trips}")
+    # Initialize default passengers if not provided
+    if passengers is None:
+        passengers = Passengers()
     
     # Validate passengers
     if not isinstance(passengers, Passengers):
         raise ValueError("passengers must be an instance of Passengers")
     
     # Validate language
-    if language and not isinstance(language, (str, Language)):
-        raise ValueError("language must be a string or Language enum value")
+    language = validate_language(language) if language else ""
+    language = LANGUAGE_LOOKUP.get(language, "") if language else ""
     
-    # Validate and normalize currency
-    currency_code = validate_currency(currency) if currency else ""
+    # Validate currency
+    if currency:
+        currency = validate_currency(currency)
+    currency_code = CURRENCY_LOOKUP.get(currency, "") if currency else ""
     
-    # Apply max_stops to all flights if specified
+    # Validate flights list
+    validate_flights_list(flights, FlightQuery)
+    
+    # Validate and normalize seat type
+    seat = validate_seat_type(seat)
+    
+    # Validate and normalize trip type
+    trip = validate_trip_type(trip)
+    
+    # Validate and apply max_stops to all flights if specified
     if max_stops is not None:
-        if not isinstance(max_stops, int) or max_stops < 0:
-            raise ValueError("max_stops must be a non-negative integer")
+        max_stops = validate_max_stops(max_stops)
         flights = [flight._setmaxstops(max_stops) for flight in flights]
     
     # Create and return the query
     return Query(
-        flight_data=[flight.pb() for flight in flights],
+        flight_data=[flight.to_proto() for flight in flights],
         seat=SEAT_LOOKUP[seat],
         trip=TRIP_LOOKUP[trip],
-        passengers=passengers.pb(),
+        passengers=passengers.to_proto(),
         language=str(language) if language else "",
         currency=currency_code,
     )

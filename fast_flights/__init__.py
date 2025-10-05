@@ -1,34 +1,14 @@
 from . import integrations
-from .exceptions import (
-    FastFlightsError,
-    ValidationError,
-    AirportCodeError,
-    DateFormatError,
-    PassengerError,
-    FlightQueryError,
-    APIConnectionError,
-    APIError,
-)
-from .validation import (
-    validate_airport_code,
-    validate_date,
-    validate_passengers,
-    validate_flight_query,
-    validate_currency,
-)
-from .querying import (
-    FlightQuery,
-    Query,
-    Passengers,
-    create_query,
-    create_query as create_filter,  # alias
-)
+from .exceptions import FastFlightsError, APIError
+from .querying import FlightQuery, Passengers, create_query
 from .fetcher import get_flights, fetch_flights_html
+
+# Create alias for backward compatibility
+create_filter = create_query
 
 __all__ = [
     # Core functionality
     "FlightQuery",
-    "Query",
     "Passengers",
     "create_query",
     "create_filter",
@@ -36,20 +16,7 @@ __all__ = [
     "fetch_flights_html",
     "integrations",
     
-    # Exceptions
+    # Public exceptions
     "FastFlightsError",
-    "ValidationError",
-    "AirportCodeError",
-    "DateFormatError",
-    "PassengerError",
-    "FlightQueryError",
-    "APIConnectionError",
-    "APIError",
-    
-    # Validation utilities
-    "validate_airport_code",
-    "validate_date",
-    "validate_passengers",
-    "validate_flight_query",
-    "validate_currency",
+    "APIError"
 ]
