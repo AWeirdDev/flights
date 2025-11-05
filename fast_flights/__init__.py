@@ -4,6 +4,7 @@ from .filter import create_filter
 from .flights_impl import Airport, FlightData, Passengers, TFSData
 from .schema import Flight, Result
 from .search import search_airport
+from .cache import get_flight_cache, clear_flight_cache, TTLCache
 
 __all__ = [
     "Airport",
@@ -17,4 +18,7 @@ __all__ = [
     "search_airport",
     "Cookies",
     "get_flights",
+    "get_flight_cache",
+    "clear_flight_cache",
+    "TTLCache",
 ]

@@ -11,6 +11,7 @@ from .filter import TFSData
 from .fallback_playwright import fallback_playwright_fetch
 from .bright_data_fetch import bright_data_fetch
 from .primp import Client, Response
+from .cache import get_flight_cache, TTLCache
 
 
 DataSource = Literal['html', 'js']
@@ -45,7 +46,23 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: DataSource = 'html',
+    cache_ttl: Optional[int] = 300,
+    use_cache: bool = True,
 ) -> Union[Result, DecodedResult, None]:
+    """
+    Get flights from a filter with optional caching.
+
+    Args:
+        filter: TFS filter data
+        currency: Currency code (e.g., "USD")
+        mode: Fetch mode to use
+        data_source: Data source type ('html' or 'js')
+        cache_ttl: Cache time-to-live in seconds (default: 300 = 5 minutes)
+        use_cache: Whether to use caching (default: True)
+
+    Returns:
+        Flight results
+    """
     data = filter.as_b64()
 
     params = {
@@ -54,6 +71,20 @@ def get_flights_from_filter(
         "tfu": "EgQIABABIgA",
         "curr": currency,
     }
+
+    # Check cache if enabled
+    if use_cache:
+        cache = get_flight_cache(ttl=cache_ttl or 300)
+        cache_key = TTLCache.create_cache_key(
+            params["tfs"],
+            params["curr"],
+            mode,
+            data_source
+        )
+
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return cached_result
 
     if mode in {"common", "fallback"}:
         try:
@@ -76,10 +107,30 @@ def get_flights_from_filter(
         res = fallback_playwright_fetch(params)
 
     try:
-        return parse_response(res, data_source)
+        result = parse_response(res, data_source)
+
+        # Cache the result if caching is enabled
+        if use_cache and result is not None:
+            cache = get_flight_cache(ttl=cache_ttl or 300)
+            cache_key = TTLCache.create_cache_key(
+                params["tfs"],
+                params["curr"],
+                mode,
+                data_source
+            )
+            cache.set(cache_key, result, ttl=cache_ttl)
+
+        return result
     except RuntimeError as e:
         if mode == "fallback":
-            return get_flights_from_filter(filter, mode="force-fallback")
+            return get_flights_from_filter(
+                filter,
+                currency=currency,
+                mode="force-fallback",
+                data_source=data_source,
+                cache_ttl=cache_ttl,
+                use_cache=use_cache
+            )
         raise e
 
 
@@ -92,7 +143,26 @@ def get_flights(
     fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
+    cache_ttl: Optional[int] = 300,
+    use_cache: bool = True,
 ) -> Union[Result, DecodedResult, None]:
+    """
+    Get flights with optional caching.
+
+    Args:
+        flight_data: List of flight data (origin, destination, date)
+        trip: Trip type
+        passengers: Passenger configuration
+        seat: Seat class
+        fetch_mode: Fetch mode to use
+        max_stops: Maximum number of stops
+        data_source: Data source type ('html' or 'js')
+        cache_ttl: Cache time-to-live in seconds (default: 300 = 5 minutes)
+        use_cache: Whether to use caching (default: True)
+
+    Returns:
+        Flight results
+    """
     return get_flights_from_filter(
         TFSData.from_interface(
             flight_data=flight_data,
@@ -103,6 +173,8 @@ def get_flights(
         ),
         mode=fetch_mode,
         data_source=data_source,
+        cache_ttl=cache_ttl,
+        use_cache=use_cache,
     )
 
 
