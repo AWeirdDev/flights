@@ -129,12 +129,14 @@ class TFSData:
         trip: PB.Trip,  # type: ignore
         passengers: Passengers,
         max_stops: Optional[int] = None,  # Add max_stops to the constructor
+        exclude_basic_economy: bool = False,
     ):
         self.flight_data = flight_data
         self.seat = seat
         self.trip = trip
         self.passengers = passengers
         self.max_stops = max_stops  # Store max_stops
+        self.exclude_basic_economy = exclude_basic_economy
 
     def pb(self) -> PB.Info:  # type: ignore
         info = PB.Info()
@@ -150,6 +152,9 @@ class TFSData:
         if self.max_stops is not None:
             for flight in info.data:
                 flight.max_stops = self.max_stops
+
+        # Set exclude_basic_economy field (0 = don't exclude, 1 = exclude)
+        info.exclude_basic_economy = 1 if self.exclude_basic_economy else 0
 
         return info
 
@@ -167,6 +172,7 @@ class TFSData:
         passengers: Passengers,
         seat: Literal["economy", "premium-economy", "business", "first"],
         max_stops: Optional[int] = None,  # Add max_stops to the method signature
+        exclude_basic_economy: bool = False,
     ):
         """Use ``?tfs=`` from an interface.
 
@@ -176,6 +182,7 @@ class TFSData:
             passengers (Passengers): Passengers.
             seat ("economy" | "premium-economy" | "business" | "first"): Seat.
             max_stops (int, optional): Maximum number of stops.
+            exclude_basic_economy (bool, optional): Exclude basic economy fares. Defaults to False.
         """
         trip_t = {
             "round-trip": PB.Trip.ROUND_TRIP,
@@ -194,11 +201,12 @@ class TFSData:
             seat=seat_t,
             trip=trip_t,
             passengers=passengers,
-            max_stops=max_stops  # Pass max_stops into TFSData
+            max_stops=max_stops,  # Pass max_stops into TFSData
+            exclude_basic_economy=exclude_basic_economy,
         )
 
     def __repr__(self) -> str:
-        return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r})"
+        return f"TFSData(flight_data={self.flight_data!r}, max_stops={self.max_stops!r}, exclude_basic_economy={self.exclude_basic_economy!r})"
 
 @dataclass
 class ItinerarySummary:

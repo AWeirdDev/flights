@@ -91,6 +91,7 @@ def get_flights(
     seat: Literal["economy", "premium-economy", "business", "first"],
     fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
+    exclude_basic_economy: bool = False,
     data_source: DataSource = 'html',
 ) -> Union[Result, DecodedResult, None]:
     return get_flights_from_filter(
@@ -100,6 +101,7 @@ def get_flights(
             passengers=passengers,
             seat=seat,
             max_stops=max_stops,
+            exclude_basic_economy=exclude_basic_economy,
         ),
         mode=fetch_mode,
         data_source=data_source,

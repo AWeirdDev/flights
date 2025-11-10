@@ -8,6 +8,7 @@ def create_filter(
     passengers: Passengers,
     seat: Literal["economy", "premium-economy", "business", "first"],
     max_stops: Optional[int] = None,
+    exclude_basic_economy: bool = False,
 ) -> TFSData:
     """Create a filter. (``?tfs=``)
 
@@ -17,10 +18,15 @@ def create_filter(
         passengers (Passengers): Passengers.
         seat ("economy" | "premium-economy" | "business" | "first"): Seat.
         max_stops (int, optional): Maximum number of stops. Defaults to None.
+        exclude_basic_economy (bool, optional): Exclude basic economy fares. Defaults to False.
     """
     for fd in flight_data:
         fd.max_stops = max_stops
 
     return TFSData.from_interface(
-        flight_data=flight_data, trip=trip, passengers=passengers, seat=seat
+        flight_data=flight_data,
+        trip=trip,
+        passengers=passengers,
+        seat=seat,
+        exclude_basic_economy=exclude_basic_economy,
     )

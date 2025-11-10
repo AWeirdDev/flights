@@ -32,6 +32,7 @@ def main():
     parser.add_argument('--type', type=str, default="economy", help="Fare class (economy, premium-economy, business or first)")
     parser.add_argument('--max_stops', type=int, help="Maximum number of stops (optional, [0|1|2])")
     parser.add_argument('--fetch_mode', type=str, default="common", help="Fetch mode: common, fallback, force-fallback, local, bright-data")
+    parser.add_argument('--exclude_basic_economy', action='store_true', help="Exclude basic economy fares")
 
 
     args = parser.parse_args()
@@ -58,7 +59,8 @@ def main():
             infants_in_seat=0,
             infants_on_lap=0
         ),
-        max_stops=args.max_stops
+        max_stops=args.max_stops,
+        exclude_basic_economy=args.exclude_basic_economy
     )
 
     b64 = filter.as_b64().decode('utf-8')
