@@ -45,13 +45,14 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: DataSource = 'html',
+    tfu: str = "EgQIABABIgA",
 ) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
 
     params = {
         "tfs": data.decode("utf-8"),
         "hl": "en",
-        "tfu": "EgQIABABIgA",
+        "tfu": tfu,
         "curr": currency,
     }
 
@@ -76,10 +77,10 @@ def get_flights_from_filter(
         res = fallback_playwright_fetch(params)
 
     try:
-        return parse_response(res, data_source)
+        return parse_response(res, data_source, tfu=tfu)
     except RuntimeError as e:
         if mode == "fallback":
-            return get_flights_from_filter(filter, mode="force-fallback")
+            return get_flights_from_filter(filter, currency=currency, mode="force-fallback", data_source=data_source, tfu=tfu)
         raise e
 
 
@@ -108,11 +109,99 @@ def get_flights(
     )
 
 
+@overload
+def get_flights_from_tfs(
+    tfs: str,
+    currency: str = "",
+    *,
+    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    data_source: Literal['js'] = ...,
+) -> Union[DecodedResult, None]: ...
+
+@overload
+def get_flights_from_tfs(
+    tfs: str,
+    currency: str = "",
+    *,
+    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    data_source: Literal['html'],
+) -> Result: ...
+
+def get_flights_from_tfs(
+    tfs: str,
+    currency: str = "",
+    *,
+    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    data_source: DataSource = 'html',
+    tfu: str = "EgQIABABIgA",
+) -> Union[Result, DecodedResult, None]:
+    """Fetch flights from a raw TFS (base64-encoded protobuf) string.
+
+    This is useful for fetching return flight options after generating a return flight URL.
+
+    Args:
+        tfs (str): Base64-encoded TFS parameter (e.g., from create_return_flight_filter).
+        currency (str, optional): Currency code for prices. Defaults to "".
+        mode (str, optional): Fetch mode. Defaults to "common".
+        data_source (str, optional): Data source ('html' or 'js'). Defaults to 'html'.
+        tfu (str, optional): TFU parameter for Google Flights. Defaults to "EgQIABABIgA".
+
+    Returns:
+        Result or DecodedResult: Flight search results.
+
+    Example:
+        >>> from fast_flights import create_return_flight_filter, get_flights_from_tfs
+        >>> tfs = create_return_flight_filter(
+        ...     outbound_date="2025-11-18",
+        ...     outbound_from="SFO",
+        ...     outbound_to="MCO",
+        ...     outbound_airline="UA",
+        ...     outbound_flight_number="2018",
+        ...     return_date="2025-11-25"
+        ... )
+        >>> return_flights = get_flights_from_tfs(tfs, data_source='js')
+    """
+    params = {
+        "tfs": tfs,
+        "hl": "en",
+        "tfu": tfu,
+        "curr": currency,
+    }
+
+    if mode in {"common", "fallback"}:
+        try:
+            res = fetch(params)
+        except AssertionError as e:
+            if mode == "fallback":
+                res = fallback_playwright_fetch(params)
+            else:
+                raise e
+
+    elif mode == "local":
+        from .local_playwright import local_playwright_fetch
+
+        res = local_playwright_fetch(params)
+
+    elif mode == "bright-data":
+        res = bright_data_fetch(params)
+
+    else:
+        res = fallback_playwright_fetch(params)
+
+    try:
+        return parse_response(res, data_source, tfu=tfu)
+    except RuntimeError as e:
+        if mode == "fallback":
+            return get_flights_from_tfs(tfs, currency, mode="force-fallback", data_source=data_source, tfu=tfu)
+        raise e
+
+
 def parse_response(
     r: Response,
     data_source: DataSource,
     *,
     dangerously_allow_looping_last_item: bool = False,
+    tfu: str = "EgQIABABIgA",
 ) -> Union[Result, DecodedResult, None]:
     class _blank:
         def text(self, *_, **__):
@@ -134,7 +223,7 @@ def parse_response(
         match = re.search(r'^.*?\{.*?data:(\[.*\]).*\}', script)
         assert match, 'Malformed js data, cannot find script data'
         data = json.loads(match.group(1))
-        return ResultDecoder.decode(data) if data is not None else None
+        return ResultDecoder.decode(data, tfu=tfu) if data is not None else None
 
     flights = []
 

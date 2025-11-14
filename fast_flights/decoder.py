@@ -20,6 +20,10 @@ class NLData(Sequence[NLBaseType]):
             return self.data[decode_path]
         it = self.data
         for index in decode_path:
+            # Return None early if we encounter None during traversal
+            # This handles return flight pages where data[2] = None
+            if it is None:
+                return None
             assert isinstance(it, list), f'Found non list type while trying to decode {decode_path}'
             assert index < len(it), f'Trying to traverse to index out of range when decoding {decode_path}'
             it = it[index]
@@ -38,6 +42,12 @@ class DecoderKey(Generic[V]):
 
     def decode(self, root: NLData) -> Union[NLBaseType, V]:
         data = root[self.decode_path]
+
+        # Handle None values - return empty list if decoder expects a list
+        # This handles return flight pages where data[2] = None (no "best" flights section)
+        if data is None and self.decoder is not None:
+            return []
+
         if isinstance(data, list) and self.decoder:
             assert self.decoder is not None, f'decoder should be provided in order to further decode NLData instances'
             return self.decoder(NLData(data))
@@ -119,6 +129,7 @@ class Itinerary:
     departure_time: Tuple[int, int]
     arrival_time: Tuple[int, int]
     itinerary_summary: ItinerarySummary
+    tfu: Optional[str] = None
 
 @dataclass
 class DecodedResult:
@@ -216,6 +227,14 @@ class ResultDecoder(Decoder):
 
     @classmethod
     @override
-    def decode(cls, root: Union[list, NLData]) -> DecodedResult:
+    def decode(cls, root: Union[list, NLData], tfu: str = "EgQIABABIgA") -> DecodedResult:
         assert isinstance(root, list), 'Root data must be list type'
-        return DecodedResult(**cls.decode_el(NLData(root)), raw=root)
+        result_data = cls.decode_el(NLData(root))
+
+        # Add tfu to each itinerary
+        for itinerary in result_data.get('best', []):
+            itinerary.tfu = tfu
+        for itinerary in result_data.get('other', []):
+            itinerary.tfu = tfu
+
+        return DecodedResult(**result_data, raw=root)

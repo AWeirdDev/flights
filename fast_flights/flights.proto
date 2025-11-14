@@ -52,3 +52,42 @@ message ItinerarySummary {
   string flights = 2;
   Price price = 3;
 }
+
+// Messages for return flight selection (after selecting outbound flight)
+
+message SelectedFlight {
+  string from_airport = 1;
+  string date = 2;
+  string to_airport = 3;
+  string airline = 5;
+  string flight_number = 6;
+}
+
+message LocationFilter {
+  int32 filter_type = 1;
+  string value = 2;
+}
+
+message LegWithSelection {
+  string date = 2;
+  repeated SelectedFlight selected_flight = 4;
+  optional int32 max_stops = 5;
+  LocationFilter location_filter_1 = 13;
+  LocationFilter location_filter_2 = 14;
+}
+
+message UnknownField16 {
+  sint64 value = 1;
+}
+
+message ReturnFlightQuery {
+  int32 query_type = 1;
+  int32 step = 2;
+  repeated LegWithSelection legs = 3;
+  int32 field_8 = 8;
+  int32 field_9 = 9;
+  int32 field_14 = 14;
+  UnknownField16 field_16 = 16;
+  int32 field_19 = 19;
+  optional int32 field_25 = 25;
+}
