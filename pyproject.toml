@@ -22,7 +22,11 @@ dependencies = [
   "primp",
   "protobuf>=5.27.0",
   "selectolax",
+  "typing_extensions>=4.0",
 ]
+
+[project.scripts]
+flights-cli = "fast_flights.cli:main"
 
 [project.optional-dependencies]
 local = [
