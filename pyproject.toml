@@ -3,12 +3,12 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "fast-flights"
-version = "2.2"
-description = "The fast, robust, strongly-typed Google Flights scraper (API) implemented in Python."
+name = "fast-flights-unoff"
+version = "0.1.0"
+description = "An unofficial, extended version of the fast, robust, strongly-typed Google Flights scraper (API)."
 keywords = ["flights", "google", "google-flights", "scraper", "protobuf", "travel", "trip", "passengers", "airport"]
 authors = [
-  { name = "AWeirdDev", email = "aweirdscratcher@gmail.com" },
+  { name = "atharvvvg", email = "atharv230303@gmail.com" },
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
@@ -30,8 +30,9 @@ local = [
 ]
 
 [project.urls]
-"Source" = "https://github.com/AWeirdDev/flights"
-"Issues" = "https://github.com/AWeirdDev/flights/issues"
+"Source" = "https://github.com/atharvvvg/google-flights-scraper"
+"Issues" = "https://github.com/atharvvvg/google-flights-scraper/issues"
+"Original Source" = "https://github.com/AWeirdDev/flights"
 "Documentation" = "https://aweirddev.github.io/flights/"
 
 [tool.setuptools]
