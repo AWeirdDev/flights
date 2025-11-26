@@ -28,6 +28,7 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: Literal['js'] = ...,
+    price_type: Literal["best", "cheapest"] = "best",
 ) -> Union[DecodedResult, None]: ...
 
 @overload
@@ -37,6 +38,7 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: Literal['html'],
+    price_type: Literal["best", "cheapest"] = "best",
 ) -> Result: ...
 
 def get_flights_from_filter(
@@ -45,13 +47,16 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: DataSource = 'html',
+    price_type: Literal["best", "cheapest"] = "best",
 ) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
+
+    tfu_value = "EgQIABABIgA" if price_type == "best" else "EgoIABAAGAAgAigLIgA"
 
     params = {
         "tfs": data.decode("utf-8"),
         "hl": "en",
-        "tfu": "EgQIABABIgA",
+        "tfu": tfu_value,
         "curr": currency,
     }
 
@@ -79,7 +84,7 @@ def get_flights_from_filter(
         return parse_response(res, data_source)
     except RuntimeError as e:
         if mode == "fallback":
-            return get_flights_from_filter(filter, mode="force-fallback")
+            return get_flights_from_filter(filter, mode="force-fallback", price_type=price_type)
         raise e
 
 
@@ -92,6 +97,7 @@ def get_flights(
     fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
+    price_type: Literal["best", "cheapest"] = "best",
 ) -> Union[Result, DecodedResult, None]:
     return get_flights_from_filter(
         TFSData.from_interface(
@@ -103,6 +109,7 @@ def get_flights(
         ),
         mode=fetch_mode,
         data_source=data_source,
+        price_type=price_type,
     )
 
 

@@ -32,6 +32,7 @@ def main():
     parser.add_argument('--type', type=str, default="economy", help="Fare class (economy, premium-economy, business or first)")
     parser.add_argument('--max_stops', type=int, help="Maximum number of stops (optional, [0|1|2])")
     parser.add_argument('--fetch_mode', type=str, default="common", help="Fetch mode: common, fallback, force-fallback, local, bright-data")
+    parser.add_argument('--price_type', type=str, default="best", help="Price type: best (official airline prices) or cheapest (travel agency prices)")
 
 
     args = parser.parse_args()
@@ -68,7 +69,8 @@ def main():
 
     # Get flights with the filter
     result = get_flights_from_filter(filter,
-                                     mode=args.fetch_mode
+                                     mode=args.fetch_mode,
+                                     price_type=args.price_type
                                      )
 
     try:
