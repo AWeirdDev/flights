@@ -1,12 +1,12 @@
 import re
 import json
-from typing import List, Literal, Optional, Union, overload
+from typing import List, Literal, Optional, Union, overload, get_args
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
 from .decoder import DecodedResult, ResultDecoder
 from .schema import Flight, Result
-from .flights_impl import FlightData, Passengers
+from .flights_impl import FlightData, Passengers, TripType, SeatType
 from .filter import TFSData
 from .fallback_playwright import fallback_playwright_fetch
 from .bright_data_fetch import bright_data_fetch
@@ -14,6 +14,7 @@ from .primp import Client, Response
 
 
 DataSource = Literal['html', 'js']
+FetchMode = Literal["common", "fallback", "force-fallback", "local", "bright-data"]
 
 def fetch(params: dict) -> Response:
     client = Client(impersonate="chrome_126", verify=False)
@@ -26,7 +27,7 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    mode: FetchMode = "common",
     data_source: Literal['js'] = ...,
 ) -> Union[DecodedResult, None]: ...
 
@@ -35,7 +36,7 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    mode: FetchMode = "common",
     data_source: Literal['html'],
 ) -> Result: ...
 
@@ -43,9 +44,23 @@ def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    mode: FetchMode = "common",
     data_source: DataSource = 'html',
 ) -> Union[Result, DecodedResult, None]:
+    # Validate mode parameter
+    valid_modes = get_args(FetchMode)
+    if mode not in valid_modes:
+        raise ValueError(
+            f"Invalid fetch mode: {mode}. Must be one of {list(valid_modes)}"
+        )
+    
+    # Validate data_source parameter
+    valid_data_sources = get_args(DataSource)
+    if data_source not in valid_data_sources:
+        raise ValueError(
+            f"Invalid data_source: {data_source}. Must be one of {list(valid_data_sources)}"
+        )
+    
     data = filter.as_b64()
 
     params = {
@@ -86,10 +101,10 @@ def get_flights_from_filter(
 def get_flights(
     *,
     flight_data: List[FlightData],
-    trip: Literal["round-trip", "one-way", "multi-city"],
+    trip: TripType,
     passengers: Passengers,
-    seat: Literal["economy", "premium-economy", "business", "first"],
-    fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
+    seat: SeatType,
+    fetch_mode: FetchMode = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
 ) -> Union[Result, DecodedResult, None]:
