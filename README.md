@@ -57,6 +57,34 @@ flight.delay?  # may not be present
 flight.price
 ```
 
+### Using Playwright with Docker Container
+
+First, run a Playwright browser server in Docker:
+
+```bash
+docker run -it --rm -p 3000:3000 mcr.microsoft.com/playwright:v1.53.0-noble /bin/bash -c "cd /home/pwuser && npx playwright install && npx -y playwright@1.53.0 run-server --port=3000"
+```
+
+Then use it in your Python code:
+
+```python
+from fast_flights import FlightData, Passengers, Result, get_flights, PlaywrightConfig
+
+# Configure remote Playwright connection
+playwright_config = PlaywrightConfig(url="ws://localhost:3000")
+
+result: Result = get_flights(
+    flight_data=[
+        FlightData(date="2025-01-01", from_airport="TPE", to_airport="MYJ")
+    ],
+    trip="one-way",
+    seat="economy",
+    passengers=Passengers(adults=2, children=1, infants_in_seat=0, infants_on_lap=0),
+    fetch_mode="local",  # or "fallback"
+    playwright_config=playwright_config,
+)
+```
+
 **Useless enums**: Additionally, you can use the `Airport` enum to search for airports in code (as you type)! See `_generated_enum.py` in source.
 
 ```python
