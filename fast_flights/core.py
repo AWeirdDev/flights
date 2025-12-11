@@ -1,6 +1,6 @@
 import re
 import json
-from typing import List, Literal, Optional, Union, overload
+from typing import List, Literal, Optional, Union
 
 from selectolax.lexbor import LexborHTMLParser, LexborNode
 
@@ -15,29 +15,13 @@ from .primp import Client, Response
 
 DataSource = Literal['html', 'js']
 
-def fetch(params: dict) -> Response:
+def fetch(params: dict, request_kwargs: dict | None = None) -> Response:
     client = Client(impersonate="chrome_126", verify=False)
-    res = client.get("https://www.google.com/travel/flights", params=params)
+    # Pass through any extra request kwargs (e.g., cookies, headers)
+    req_kwargs = request_kwargs.copy() if request_kwargs else {}
+    res = client.get("https://www.google.com/travel/flights", params=params, **req_kwargs)
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res
-
-@overload
-def get_flights_from_filter(
-    filter: TFSData,
-    currency: str = "",
-    *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
-    data_source: Literal['js'] = ...,
-) -> Union[DecodedResult, None]: ...
-
-@overload
-def get_flights_from_filter(
-    filter: TFSData,
-    currency: str = "",
-    *,
-    mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
-    data_source: Literal['html'],
-) -> Result: ...
 
 def get_flights_from_filter(
     filter: TFSData,
@@ -45,6 +29,7 @@ def get_flights_from_filter(
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: DataSource = 'html',
+    request_kwargs: dict | None = None,
 ) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
 
@@ -57,29 +42,29 @@ def get_flights_from_filter(
 
     if mode in {"common", "fallback"}:
         try:
-            res = fetch(params)
+            res = fetch(params, request_kwargs=request_kwargs)
         except AssertionError as e:
             if mode == "fallback":
-                res = fallback_playwright_fetch(params)
+                res = fallback_playwright_fetch(params, request_kwargs=request_kwargs)
             else:
                 raise e
 
     elif mode == "local":
         from .local_playwright import local_playwright_fetch
 
-        res = local_playwright_fetch(params)
+        res = local_playwright_fetch(params, request_kwargs=request_kwargs)
 
     elif mode == "bright-data":
-        res = bright_data_fetch(params)
+        res = bright_data_fetch(params, request_kwargs=request_kwargs)
 
     else:
-        res = fallback_playwright_fetch(params)
+        res = fallback_playwright_fetch(params, request_kwargs=request_kwargs)
 
     try:
         return parse_response(res, data_source)
     except RuntimeError as e:
         if mode == "fallback":
-            return get_flights_from_filter(filter, mode="force-fallback")
+            return get_flights_from_filter(filter, mode="force-fallback", request_kwargs=request_kwargs)
         raise e
 
 
@@ -92,26 +77,30 @@ def get_flights(
     fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
+    request_kwargs: dict | None = None,
 ) -> Union[Result, DecodedResult, None]:
+    tfs: TFSData = TFSData.from_interface(
+        flight_data=flight_data,
+        trip=trip,
+        passengers=passengers,
+        seat=seat,
+        max_stops=max_stops,
+    )
+
     return get_flights_from_filter(
-        TFSData.from_interface(
-            flight_data=flight_data,
-            trip=trip,
-            passengers=passengers,
-            seat=seat,
-            max_stops=max_stops,
-        ),
+        tfs,
         mode=fetch_mode,
         data_source=data_source,
+        request_kwargs=request_kwargs,
     )
 
 
 def parse_response(
-    r: Response,
-    data_source: DataSource,
-    *,
-    dangerously_allow_looping_last_item: bool = False,
-) -> Union[Result, DecodedResult, None]:
+     r: Response,
+     data_source: DataSource,
+     *,
+     dangerously_allow_looping_last_item: bool = False,
+ ) -> Union[Result, DecodedResult, None]:
     class _blank:
         def text(self, *_, **__):
             return ""
@@ -129,7 +118,7 @@ def parse_response(
     if data_source == 'js':
         script = parser.css_first(r'script.ds\:1').text()
 
-        match = re.search(r'^.*?\{.*?data:(\[.*\]).*\}', script)
+        match = re.search(r'^.*?\{.*?data:(\[.*\]).*}', script)
         assert match, 'Malformed js data, cannot find script data'
         data = json.loads(match.group(1))
         return ResultDecoder.decode(data) if data is not None else None

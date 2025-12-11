@@ -66,10 +66,15 @@ def main():
         "https://www.google.com/travel/flights?tfs=%s" % b64
     )
 
-    # Get flights with the filter
-    result = get_flights_from_filter(filter,
-                                     mode=args.fetch_mode
-                                     )
+    # Add CONSENT and SOCS cookies to handle Google cookie consent
+    cookies = {
+        "CONSENT": "PENDING+987",
+        "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg"
+    }
+
+    # Get flights with the filter, passing cookies via request_kwargs so the
+    # underlying fetchers can use them to bypass Google consent gating.
+    result = get_flights_from_filter(filter, mode=args.fetch_mode, request_kwargs={'cookies': cookies})
 
     try:
         # Manually convert the result to a dictionary before serialization
@@ -80,8 +85,8 @@ def main():
         print(result)
         print("Error details:", str(e))
 
-    # Print price information
-    print("The price is currently", result.current_price)
+    # Print price information safely (result may be decoded or None)
+    print("The price is currently", getattr(result, 'current_price', None))
 
 if __name__ == "__main__":
     main()

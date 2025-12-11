@@ -4,9 +4,9 @@ filter = create_filter(
     flight_data=[
         # Include more if it's not a one-way trip
         FlightData(
-            date="2025-07-01",  # Date of departure
-            from_airport="TPE",  # Departure (airport)
-            to_airport="MYJ",  # Arrival (airport)
+            date="2026-05-23",  # Date of departure
+            from_airport="LHR",  # Departure (airport)
+            to_airport="SLC",  # Arrival (airport)
         )
     ],
     trip="one-way",  # Trip type
@@ -15,4 +15,11 @@ filter = create_filter(
     max_stops=1,  # Maximum number of stops
 )
 print(filter.as_b64().decode("utf-8"))
-print(get_flights_from_filter(filter, mode="common"))
+
+# Add CONSENT and SOCS cookies to handle Google cookie consent
+cookies = {
+    "CONSENT": "PENDING+987",
+    "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg"
+}
+
+print(get_flights_from_filter(filter, mode="common", request_kwargs={'cookies': cookies}))
