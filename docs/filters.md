@@ -88,3 +88,64 @@ filter: TFSData = create_filter(
 filter.as_b64()  # Base64-encoded (bytes)
 filter.to_string()  # Serialize to string
 ```
+
+## Passing cookies (binary parameter)
+
+Both `get_flights_from_filter(...)` and `get_flights(...)` accept a new optional parameter `cookies: bytes | None` which allows you to embed cookies as a binary payload that will be forwarded to the underlying fetchers.
+
+Supported cookie formats (the function will try them in this order):
+
+- JSON bytes: UTF-8 JSON encoding of a dict (e.g. `{ "CONSENT": "...", "SOCS": "..." }`). This will be set as `request_kwargs['cookies']`.
+- Pickle bytes: a pickled `dict` of cookie-name -> value; this will be set as `request_kwargs['cookies']`.
+- Raw Cookie header: if the bytes can't be parsed as JSON or pickle, they are decoded as UTF-8 and set as the `Cookie` HTTP header (`request_kwargs['headers']['Cookie']`).
+
+Examples:
+
+- JSON-encoded cookies as bytes (recommended):
+
+```python
+import json
+cookies = {"CONSENT": "PENDING+987", "SOCS": "CAESH..."}
+cookies_bytes = json.dumps(cookies).encode("utf-8")
+result = get_flights_from_filter(filter, cookies=cookies_bytes)
+```
+
+- Raw header example (when you already have a Cookie header string):
+
+```python
+cookies_bytes = b"CONSENT=PENDING+987; SOCS=CAESH..."
+result = get_flights_from_filter(filter, cookies=cookies_bytes)
+```
+
+Backward compatibility:
+
+- You can still pass cookies the old way via `request_kwargs={'cookies': {'CONSENT': '...', 'SOCS': '...'}}` — this is honored when `cookies` (binary) is not provided.
+- If both `cookies` (binary) and `request_kwargs` are provided, the parsed binary `cookies` take precedence and will override any `cookies` or `Cookie` header in `request_kwargs`.
+
+Security and privacy note:
+
+- Cookies may contain sensitive values. Avoid logging or committing cookies into source control and only supply cookies you trust.
+
+### Configurable default consent cookies
+
+The library embeds a small default consent cookie bundle used to bypass common Google consent gating. If you prefer to disable or explicitly control this behavior, both `get_flights_from_filter` and `get_flights` accept a boolean flag `cookie_consent: bool` (default `True`).
+
+- To use the embedded default cookies (the default behavior):
+
+```python
+# will apply embedded default cookies unless you provide cookies/request_kwargs explicitly
+result = get_flights_from_filter(filter, cookie_consent=True)
+```
+
+- To disable automatic application of the embedded default cookies:
+
+```python
+# will NOT add any embedded cookies; you can still pass cookies explicitly via request_kwargs or the binary `cookies` parameter
+result = get_flights_from_filter(filter, cookie_consent=False)
+```
+
+You can also pass the flag through `get_flights`:
+
+```python
+result = get_flights(..., cookie_consent=False)
+```

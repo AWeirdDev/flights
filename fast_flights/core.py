@@ -15,6 +15,16 @@ from .primp import Client, Response
 
 DataSource = Literal['html', 'js']
 
+# Default cookies embedded into the app to help bypass common consent gating.
+# These are used only if the caller does not supply cookies (binary) and
+# does not provide cookies via request_kwargs.
+_DEFAULT_COOKIES = {
+    "CONSENT": "PENDING+987",
+    "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg",
+}
+_DEFAULT_COOKIES_BYTES = json.dumps(_DEFAULT_COOKIES).encode("utf-8")
+
+
 def fetch(params: dict, request_kwargs: dict | None = None) -> Response:
     client = Client(impersonate="chrome_126", verify=False)
     # Pass through any extra request kwargs (e.g., cookies, headers)
@@ -23,13 +33,73 @@ def fetch(params: dict, request_kwargs: dict | None = None) -> Response:
     assert res.status_code == 200, f"{res.status_code} Result: {res.text_markdown}"
     return res
 
+
+def _merge_binary_cookies(cookies_bytes: bytes | None, request_kwargs: dict | None) -> dict:
+    """Parse binary cookies into request kwargs.
+
+    Supported formats (in order):
+    - JSON bytes -> dict or list of pairs
+    - Pickle bytes -> dict
+    - Raw cookie header bytes -> sets the 'Cookie' header
+
+    Existing request_kwargs are copied and updated; existing 'cookies' or 'headers' are overridden by parsed values.
+    """
+    req_kwargs = request_kwargs.copy() if request_kwargs else {}
+    if not cookies_bytes:
+        return req_kwargs
+
+    # Try JSON first
+    try:
+        s = cookies_bytes.decode("utf-8")
+        parsed = json.loads(s)
+        if isinstance(parsed, dict):
+            req_kwargs['cookies'] = parsed
+            return req_kwargs
+        if isinstance(parsed, list):
+            # list of pairs
+            try:
+                req_kwargs['cookies'] = dict(parsed)
+                return req_kwargs
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Try pickle
+    try:
+        import pickle
+
+        parsed = pickle.loads(cookies_bytes)
+        if isinstance(parsed, dict):
+            req_kwargs['cookies'] = parsed
+            return req_kwargs
+    except Exception:
+        pass
+
+    # Fallback: treat as raw Cookie header
+    try:
+        s = cookies_bytes.decode("utf-8")
+        headers = req_kwargs.get('headers', {})
+        # make a shallow copy to avoid mutating input
+        headers = headers.copy() if isinstance(headers, dict) else {}
+        headers['Cookie'] = s
+        req_kwargs['headers'] = headers
+    except Exception:
+        # give up silently and return what we have
+        pass
+
+    return req_kwargs
+
+
 def get_flights_from_filter(
     filter: TFSData,
     currency: str = "",
     *,
     mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     data_source: DataSource = 'html',
+    cookies: bytes | None = None,
     request_kwargs: dict | None = None,
+    cookie_consent: bool = True,
 ) -> Union[Result, DecodedResult, None]:
     data = filter.as_b64()
 
@@ -40,32 +110,48 @@ def get_flights_from_filter(
         "curr": currency,
     }
 
+    # If the caller didn't provide cookies bytes and there is no cookies or Cookie header
+    # in request_kwargs, use the embedded default cookies bytes (only when enabled).
+    if cookies is None and cookie_consent:
+        has_cookies_in_req = False
+        if request_kwargs:
+            if 'cookies' in request_kwargs:
+                has_cookies_in_req = True
+            elif 'headers' in request_kwargs and isinstance(request_kwargs['headers'], dict) and 'Cookie' in request_kwargs['headers']:
+                has_cookies_in_req = True
+        if not has_cookies_in_req:
+            cookies = _DEFAULT_COOKIES_BYTES
+
+    # Merge binary cookies into request kwargs (binary cookies take precedence)
+    req_kwargs = _merge_binary_cookies(cookies, request_kwargs)
+
     if mode in {"common", "fallback"}:
         try:
-            res = fetch(params, request_kwargs=request_kwargs)
+            res = fetch(params, request_kwargs=req_kwargs)
         except AssertionError as e:
             if mode == "fallback":
-                res = fallback_playwright_fetch(params, request_kwargs=request_kwargs)
+                res = fallback_playwright_fetch(params, request_kwargs=req_kwargs)
             else:
                 raise e
 
     elif mode == "local":
         from .local_playwright import local_playwright_fetch
 
-        res = local_playwright_fetch(params, request_kwargs=request_kwargs)
+        res = local_playwright_fetch(params, request_kwargs=req_kwargs)
 
     elif mode == "bright-data":
-        res = bright_data_fetch(params, request_kwargs=request_kwargs)
+        res = bright_data_fetch(params, request_kwargs=req_kwargs)
 
     else:
-        res = fallback_playwright_fetch(params, request_kwargs=request_kwargs)
+        res = fallback_playwright_fetch(params, request_kwargs=req_kwargs)
 
     try:
         return parse_response(res, data_source)
     except RuntimeError as e:
         if mode == "fallback":
-            return get_flights_from_filter(filter, mode="force-fallback", request_kwargs=request_kwargs)
+            return get_flights_from_filter(filter, mode="force-fallback", request_kwargs=req_kwargs, cookies=None, cookie_consent=cookie_consent)
         raise e
+
 
 
 def get_flights(
@@ -77,7 +163,9 @@ def get_flights(
     fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
+    cookies: bytes | None = None,
     request_kwargs: dict | None = None,
+    cookie_consent: bool = True,
 ) -> Union[Result, DecodedResult, None]:
     tfs: TFSData = TFSData.from_interface(
         flight_data=flight_data,
@@ -91,8 +179,11 @@ def get_flights(
         tfs,
         mode=fetch_mode,
         data_source=data_source,
+        cookies=cookies,
         request_kwargs=request_kwargs,
+        cookie_consent=cookie_consent,
     )
+
 
 
 def parse_response(

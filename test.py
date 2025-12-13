@@ -16,10 +16,6 @@ filter = create_filter(
 )
 print(filter.as_b64().decode("utf-8"))
 
-# Add CONSENT and SOCS cookies to handle Google cookie consent
-cookies = {
-    "CONSENT": "PENDING+987",
-    "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg"
-}
-
-print(get_flights_from_filter(filter, mode="common", request_kwargs={'cookies': cookies}))
+# Do not construct cookies here: `get_flights_from_filter` embeds default cookies
+# and will use them automatically when no cookies are provided.
+print(get_flights_from_filter(filter, mode="common"))

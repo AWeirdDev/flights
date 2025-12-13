@@ -66,15 +66,17 @@ def main():
         "https://www.google.com/travel/flights?tfs=%s" % b64
     )
 
-    # Add CONSENT and SOCS cookies to handle Google cookie consent
-    cookies = {
-        "CONSENT": "PENDING+987",
-        "SOCS": "CAESHAgBEhJnd3NfMjAyMzA4MTAtMF9SQzIaAmRlIAEaBgiAo_CmBg"
-    }
+    # Previously we constructed CONSENT/SOCS cookies here and passed them to
+    # get_flights_from_filter; the library now embeds a small default consent
+    # cookie bundle that will be applied automatically when no cookies are
+    # provided. To override or disable this behavior you can pass the
+    # `cookie_consent=False` flag or supply your own `cookies`/`request_kwargs`.
 
-    # Get flights with the filter, passing cookies via request_kwargs so the
-    # underlying fetchers can use them to bypass Google consent gating.
-    result = get_flights_from_filter(filter, mode=args.fetch_mode, request_kwargs={'cookies': cookies})
+    # Preferred: rely on the embedded default consent cookies (no explicit cookies passed)
+    result = get_flights_from_filter(filter, mode=args.fetch_mode)
+
+    # If you need to disable the embedded cookies and handle cookies yourself:
+    # result = get_flights_from_filter(filter, mode=args.fetch_mode, cookie_consent=False)
 
     try:
         # Manually convert the result to a dictionary before serialization
