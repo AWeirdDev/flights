@@ -67,6 +67,23 @@ passengers = Passengers(
 )
 ```
 
+CLI & programmatic examples
+
+- From the bundled example CLI (`example.py`) you can supply the number of children with the `--children` flag:
+
+```bash
+python example.py --origin LHR --destination SLC --depart_date 2026-05-23 --return_date 2026-05-30 --adults 2 --children 1
+```
+
+- Programmatically, pass the children count into `Passengers` when creating a filter or calling `get_flights`:
+
+```python
+from fast_flights import Passengers, create_filter, get_flights
+
+passengers = Passengers(adults=2, children=1)
+# use create_filter(...) or pass passengers to get_flights(...)
+```
+
 ## Example
 Here's a simple example on how to create a filter:
 

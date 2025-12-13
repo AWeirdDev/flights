@@ -10,7 +10,7 @@ filter = create_filter(
         )
     ],
     trip="one-way",  # Trip type
-    passengers=Passengers(adults=2, children=1, infants_in_seat=0, infants_on_lap=0),  # Passengers
+    passengers=Passengers(adults=2, children=2, infants_in_seat=0, infants_on_lap=0),  # Passengers
     seat="economy",  # Seat type
     max_stops=1,  # Maximum number of stops
 )

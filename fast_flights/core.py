@@ -158,8 +158,13 @@ def get_flights(
     *,
     flight_data: List[FlightData],
     trip: Literal["round-trip", "one-way", "multi-city"],
-    passengers: Passengers,
-    seat: Literal["economy", "premium-economy", "business", "first"],
+    passengers: Optional[Passengers] = None,
+    # Convenience passenger counters (used when `passengers` is None)
+    adults: Optional[int] = None,
+    children: int = 0,
+    infants_in_seat: int = 0,
+    infants_on_lap: int = 0,
+    seat: Literal["economy", "premium-economy", "business", "first"] = "economy",
     fetch_mode: Literal["common", "fallback", "force-fallback", "local", "bright-data"] = "common",
     max_stops: Optional[int] = None,
     data_source: DataSource = 'html',
@@ -167,6 +172,18 @@ def get_flights(
     request_kwargs: dict | None = None,
     cookie_consent: bool = True,
 ) -> Union[Result, DecodedResult, None]:
+    # If the caller didn't supply a Passengers object, build one from the
+    # convenience counters. Default to 1 adult when no adults count provided
+    # (matches previous typical usage where at least one adult is expected).
+    if passengers is None:
+        ad = 1 if adults is None else adults
+        passengers = Passengers(
+            adults=ad,
+            children=children,
+            infants_in_seat=infants_in_seat,
+            infants_on_lap=infants_on_lap,
+        )
+
     tfs: TFSData = TFSData.from_interface(
         flight_data=flight_data,
         trip=trip,

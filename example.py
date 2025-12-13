@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--depart_date', required=True, help="Beginning trip date (YYYY-MM-DD)")
     parser.add_argument('--return_date', required=True, help="Ending trip date (YYYY-MM-DD)")
     parser.add_argument('--adults', type=int, default=1, help="Number of adult passengers")
+    parser.add_argument('--children', type=int, default=0, help="Number of children passengers")
     parser.add_argument('--type', type=str, default="economy", help="Fare class (economy, premium-economy, business or first)")
     parser.add_argument('--max_stops', type=int, help="Maximum number of stops (optional, [0|1|2])")
     parser.add_argument('--fetch_mode', type=str, default="common", help="Fetch mode: common, fallback, force-fallback, local, bright-data")
@@ -54,7 +55,7 @@ def main():
         seat=args.type,  # Seat (economy, premium-economy, business or first)
         passengers=Passengers(
             adults=args.adults,
-            children=0,
+            children=args.children,
             infants_in_seat=0,
             infants_on_lap=0
         ),
