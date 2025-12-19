@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--depart_date', required=True, help="Beginning trip date (YYYY-MM-DD)")
     parser.add_argument('--return_date', required=True, help="Ending trip date (YYYY-MM-DD)")
     parser.add_argument('--adults', type=int, default=1, help="Number of adult passengers")
+    parser.add_argument('--children', type=int, default=0, help="Number of children passengers")
     parser.add_argument('--type', type=str, default="economy", help="Fare class (economy, premium-economy, business or first)")
     parser.add_argument('--max_stops', type=int, help="Maximum number of stops (optional, [0|1|2])")
     parser.add_argument('--fetch_mode', type=str, default="common", help="Fetch mode: common, fallback, force-fallback, local, bright-data")
@@ -54,7 +55,7 @@ def main():
         seat=args.type,  # Seat (economy, premium-economy, business or first)
         passengers=Passengers(
             adults=args.adults,
-            children=0,
+            children=args.children,
             infants_in_seat=0,
             infants_on_lap=0
         ),
@@ -66,10 +67,17 @@ def main():
         "https://www.google.com/travel/flights?tfs=%s" % b64
     )
 
-    # Get flights with the filter
-    result = get_flights_from_filter(filter,
-                                     mode=args.fetch_mode
-                                     )
+    # Previously we constructed CONSENT/SOCS cookies here and passed them to
+    # get_flights_from_filter; the library now embeds a small default consent
+    # cookie bundle that will be applied automatically when no cookies are
+    # provided. To override or disable this behavior you can pass the
+    # `cookie_consent=False` flag or supply your own `cookies`/`request_kwargs`.
+
+    # Preferred: rely on the embedded default consent cookies (no explicit cookies passed)
+    result = get_flights_from_filter(filter, mode=args.fetch_mode)
+
+    # If you need to disable the embedded cookies and handle cookies yourself:
+    # result = get_flights_from_filter(filter, mode=args.fetch_mode, cookie_consent=False)
 
     try:
         # Manually convert the result to a dictionary before serialization
@@ -80,8 +88,8 @@ def main():
         print(result)
         print("Error details:", str(e))
 
-    # Print price information
-    print("The price is currently", result.current_price)
+    # Print price information safely (result may be decoded or None)
+    print("The price is currently", getattr(result, 'current_price', None))
 
 if __name__ == "__main__":
     main()
