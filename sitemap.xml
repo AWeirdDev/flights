@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/index.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/index.html"/>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/index.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/airports.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/airports.html"/>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/airports.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/fallbacks.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/fallbacks.html"/>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/fallbacks.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/filters.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/filters.html"/>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/filters.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/local.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/local.html"/>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/local.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/zh-TW/index.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/index.html"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/index.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/zh-TW/airports.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/airports.html"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/airports.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/zh-TW/fallbacks.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/fallbacks.html"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/fallbacks.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/zh-TW/filters.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/filters.html"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/filters.html"/>
+    </url>
+    <url>
+        <loc>https://github.com/AWeirdDev/flights/zh-TW/local.html</loc>
+        <lastmod>2025-12-19</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="zh-TW" href="https://github.com/AWeirdDev/flights/zh-TW/local.html"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://github.com/AWeirdDev/flights/local.html"/>
+    </url>
+</urlset>
