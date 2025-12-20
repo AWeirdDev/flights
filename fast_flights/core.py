@@ -263,6 +263,22 @@ def parse_response(
             # Get flight stops
             stops = safe(item.css_first(".BbR8Ec .ogfYpf")).text()
 
+            # Get flight code
+            flight_code = None
+            if impact_model_element := item.css_first('div[data-travelimpactmodelwebsiteurl]'):
+                if flight_code_url := impact_model_element.attrs.get('data-travelimpactmodelwebsiteurl'):
+                    try:
+                        itinerary = flight_code_url.split('itinerary=')[-1]
+                        flight_codes = []
+                        for segment in itinerary.split(','):
+                            parts = segment.split('-')
+                            if len(parts) >= 4:
+                                flight_codes.append("-".join(parts[2:-1]))
+                        if flight_codes:
+                            flight_code = ", ".join(flight_codes)
+                    except Exception:
+                        pass
+
             # Get delay
             delay = safe(item.css_first(".GsCCve")).text() or None
 
@@ -279,6 +295,7 @@ def parse_response(
                 {
                     "is_best": is_best_flight,
                     "name": name,
+                    "flight_code": flight_code,
                     "departure": " ".join(departure_time.split()),
                     "arrival": " ".join(arrival_time.split()),
                     "arrival_time_ahead": time_ahead,

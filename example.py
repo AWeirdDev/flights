@@ -6,6 +6,7 @@ def flight_to_dict(flight):
     return {
         "is_best": getattr(flight, 'is_best', None),
         "name": getattr(flight, 'name', None),
+        "flight_code": getattr(flight, 'flight_code', None),
         "departure": getattr(flight, 'departure', None),
         "arrival": getattr(flight, 'arrival', None),
         "arrival_time_ahead": getattr(flight, 'arrival_time_ahead', None),
@@ -27,31 +28,40 @@ def main():
     parser.add_argument('--origin', required=True, help="Origin airport code")
     parser.add_argument('--destination', required=True, help="Destination airport code")
     parser.add_argument('--depart_date', required=True, help="Beginning trip date (YYYY-MM-DD)")
-    parser.add_argument('--return_date', required=True, help="Ending trip date (YYYY-MM-DD)")
+    parser.add_argument('--return_date', help="Ending trip date (YYYY-MM-DD), optional for one-way")
     parser.add_argument('--adults', type=int, default=1, help="Number of adult passengers")
     parser.add_argument('--children', type=int, default=0, help="Number of children passengers")
     parser.add_argument('--type', type=str, default="economy", help="Fare class (economy, premium-economy, business or first)")
     parser.add_argument('--max_stops', type=int, help="Maximum number of stops (optional, [0|1|2])")
     parser.add_argument('--fetch_mode', type=str, default="common", help="Fetch mode: common, fallback, force-fallback, local, bright-data")
+    parser.add_argument('--output_file', type=str, help="Path to save the JSON output file (optional)")
 
 
     args = parser.parse_args()
 
-    # Create a new filter
-    filter = create_filter(
-        flight_data=[
+    flight_data = [
+        FlightData(
+            date=args.depart_date,
+            from_airport=args.origin,
+            to_airport=args.destination
+        )
+    ]
+    trip_type = "one-way"
+
+    if args.return_date:
+        flight_data.append(
             FlightData(
-                date=args.depart_date,  # Date of departure for outbound flight
-                from_airport=args.origin,
-                to_airport=args.destination
-            ),
-            FlightData(
-                date=args.return_date,  # Date of departure for return flight
+                date=args.return_date,
                 from_airport=args.destination,
                 to_airport=args.origin
-            ),
-        ],
-        trip="round-trip",  # Trip (round-trip, one-way)
+            )
+        )
+        trip_type = "round-trip"
+
+    # Create a new filter
+    filter = create_filter(
+        flight_data=flight_data,
+        trip=trip_type,
         seat=args.type,  # Seat (economy, premium-economy, business or first)
         passengers=Passengers(
             adults=args.adults,
@@ -82,7 +92,15 @@ def main():
     try:
         # Manually convert the result to a dictionary before serialization
         result_dict = result_to_dict(result)
-        print(json.dumps(result_dict, indent=4))
+        output_json = json.dumps(result_dict, indent=4)
+
+        if args.output_file:
+            with open(args.output_file, 'w') as f:
+                f.write(output_json)
+            print(f"Output saved to {args.output_file}")
+        else:
+            print(output_json)
+
     except TypeError as e:
         print("Serialization to JSON failed. Raw result output:")
         print(result)
