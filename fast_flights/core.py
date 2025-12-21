@@ -244,6 +244,48 @@ def parse_response(
                 strip=True
             )
 
+            # Attempt to extract flight number from data-travelimpactmodelwebsiteurl attribute
+            flight_number = None
+            departure_airport = None
+            arrival_airport = None
+            
+            url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
+            if url_elem:
+                url = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
+                # Example: ...itinerary=JFK-LAX-F9-2503-20250801
+                match = re.search(r'-([A-Z0-9]+)-(\d+)-\d{8}$', url)
+                if match:
+                    airline_code = match.group(1)
+                    flight_number = match.group(2)
+                
+                # Extract airport codes from the URL
+                # Pattern: itinerary=JFK-LAX-F9-2503-20250801
+                airport_match = re.search(r'itinerary=([A-Z]{3})-([A-Z]{3})-', url)
+                if airport_match:
+                    departure_airport = airport_match.group(1)
+                    arrival_airport = airport_match.group(2)
+            
+            # If not found in URL, try to extract from HTML elements
+            if not departure_airport or not arrival_airport:
+                # Look for airport codes in the route information
+                route_elem = item.css_first('.PTuQse')
+                if route_elem:
+                    route_text = route_elem.text(strip=True)
+                    # Pattern: JFK – LAX
+                    airport_match = re.search(r'([A-Z]{3})\s*–\s*([A-Z]{3})', route_text)
+                    if airport_match:
+                        departure_airport = airport_match.group(1)
+                        arrival_airport = airport_match.group(2)
+
+            # If still not found, try looking for any span with a pattern like "AA1234", "DL567", etc.
+            if not flight_number:
+                flight_number_node = item.css_first("div.sSHqwe.tPgKwe.ogfYpf span + span")
+                if flight_number_node:
+                    candidate = flight_number_node.text(strip=True)
+                    # Simple heuristic: must contain both letters and numbers
+                    if re.search(r'[A-Z]{2,3}\d{2,4}', candidate):
+                        flight_number = candidate
+
             # Get departure & arrival time
             dp_ar_node = item.css("span.mv1WYe div")
             try:
@@ -286,11 +328,44 @@ def parse_response(
                     "stops": stops_fmt,
                     "delay": delay,
                     "price": price.replace(",", ""),
+                    "flight_number": flight_number,
+                    "departure_airport": departure_airport,
+                    "arrival_airport": arrival_airport,
                 }
             )
 
     current_price = safe(parser.css_first("span.gOatQ")).text()
     if not flights:
-        raise RuntimeError("No flights found:\n{}".format(r.text_markdown))
+        # Extract relevant parts for debugging instead of full HTML
+        debug_info = []
+        
+        # Check if we can find the main flight containers
+        flight_containers = parser.css('div[jsname="IWWDBc"], div[jsname="YdtKid"]')
+        debug_info.append(f"Found {len(flight_containers)} flight containers")
+        
+        # Check if we can find any flight items
+        all_flight_items = parser.css("ul.Rk10dc li")
+        debug_info.append(f"Found {len(all_flight_items)} flight items")
+        
+        # Show first few flight items for debugging
+        for i, item in enumerate(all_flight_items[:3]):
+            name = safe(item.css_first("div.sSHqwe.tPgKwe.ogfYpf span")).text(strip=True)
+            debug_info.append(f"Flight item {i+1}: name='{name}'")
+            
+            # Show URL element if present
+            url_elem = item.css_first('[data-travelimpactmodelwebsiteurl]')
+            if url_elem:
+                url = url_elem.attributes.get('data-travelimpactmodelwebsiteurl', '')
+                debug_info.append(f"  URL: {url[:100]}...")
+        
+        # Check for script data
+        script_elem = parser.css_first(r'script.ds\:1')
+        if script_elem:
+            debug_info.append("Found script data element")
+        else:
+            debug_info.append("No script data element found")
+        
+        debug_output = "\n".join(debug_info)
+        raise RuntimeError(f"No flights found. Debug info:\n{debug_output}")
 
     return Result(current_price=current_price, flights=[Flight(**fl) for fl in flights])  # type: ignore
