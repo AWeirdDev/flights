@@ -269,6 +269,10 @@ def parse_response(
             # Get prices
             price = safe(item.css_first(".YMlIz.FpEdX")).text() or "0"
 
+            # Get flight number (from the flight details section)
+            # Flight numbers appear in spans like "F9 1230" or "UA 820"
+            flight_number = safe(item.css_first("span.Xsgmwe")).text(strip=True) or None
+
             # Stops formatting
             try:
                 stops_fmt = 0 if stops == "Nonstop" else int(stops.split(" ", 1)[0])
@@ -286,6 +290,7 @@ def parse_response(
                     "stops": stops_fmt,
                     "delay": delay,
                     "price": price.replace(",", ""),
+                    "flight_number": flight_number,
                 }
             )
 
