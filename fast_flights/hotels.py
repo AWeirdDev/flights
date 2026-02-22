@@ -1,12 +1,24 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from typing import List
+from urllib.parse import quote_plus
 
 from .hotels_schema import Hotel, HotelResult
 
 
-# Noise strings that indicate a regex match is garbage (CSS/JS artifacts)
+# Currency code → symbol mapping for price regex matching
+_CURRENCY_SYMBOLS = {
+    "USD": r"\$",
+    "EUR": r"€",
+    "GBP": r"£",
+    "JPY": r"¥",
+    "CAD": r"CA\$",
+    "AUD": r"A\$",
+}
+
+# Noise strings that indicate a regex match is a CSS/JS artifact, not a hotel
 _NOISE = frozenset(["{", "Loading", "Sponsored", "font-smooth", "VfPpkd", "$"])
 
 
@@ -25,9 +37,14 @@ def get_hotels(
         checkout: Check-out date in YYYY-MM-DD format.
         adults: Number of adult guests (default: 2).
         currency: Currency code for prices (default: "USD").
+            Supported: USD, EUR, GBP, JPY, CAD, AUD.
 
     Returns:
         HotelResult containing a list of Hotel objects sorted by price.
+
+    Raises:
+        ValueError: If checkout is not after checkin.
+        RuntimeError: If the Google Hotels request fails.
 
     Example::
 
@@ -45,10 +62,17 @@ def get_hotels(
     import primp
     from selectolax.parser import HTMLParser
 
-    query = location.replace(" ", "+")
+    # Validate dates
+    checkin_date = date.fromisoformat(checkin)
+    checkout_date = date.fromisoformat(checkout)
+    nights = (checkout_date - checkin_date).days
+    if nights <= 0:
+        raise ValueError(f"checkout ({checkout}) must be after checkin ({checkin})")
+
+    # Build URL with proper encoding for special characters (e.g. "São Paulo")
     url = (
         f"https://www.google.com/travel/hotels"
-        f"?q=hotels+in+{query}"
+        f"?q=hotels+in+{quote_plus(location)}"
         f"&checkin={checkin}"
         f"&checkout={checkout}"
         f"&adults={adults}"
@@ -58,16 +82,18 @@ def get_hotels(
 
     client = primp.Client(impersonate="chrome_131", verify=False)
     resp = client.get(url)
+
+    if resp.status_code != 200:
+        raise RuntimeError(
+            f"Google Hotels request failed with status {resp.status_code}"
+        )
+
     tree = HTMLParser(resp.text)
 
-    # Calculate number of nights for total price
-    from datetime import date
-    checkin_date = date.fromisoformat(checkin)
-    checkout_date = date.fromisoformat(checkout)
-    nights = (checkout_date - checkin_date).days
-
-    _pattern = re.compile(
-        r"^(.+?)\$(\d+)([\w\.\s]+?)(\d+\.\d+)/5\(([0-9\.]+[K]?)\)·(\d)-star hotel(.*)$"
+    # Use dynamic currency symbol so non-USD results are matched correctly
+    symbol = _CURRENCY_SYMBOLS.get(currency, re.escape(currency))
+    pattern = re.compile(
+        rf"^(.+?){symbol}(\d+)([\w\.\s]+?)(\d+\.\d+)/5\(([0-9\.]+[K]?)\)·(\d)-star hotel(.*)$"
     )
 
     hotels: List[Hotel] = []
@@ -75,7 +101,7 @@ def get_hotels(
 
     for div in tree.css("div"):
         text = div.text(strip=True)
-        m = _pattern.match(text)
+        m = pattern.match(text)
         if not m:
             continue
 
