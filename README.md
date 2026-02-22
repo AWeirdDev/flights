@@ -38,6 +38,25 @@ query = create_query(
 res = get_flights(query)
 ```
 
+## Hotels
+
+Search Google Hotels and get structured results — no new dependencies required. Uses the same `primp` + `selectolax` stack as `get_flights()`.
+
+```python
+from fast_flights import get_hotels
+
+result = get_hotels(
+    location="Lisbon Portugal",
+    checkin="2026-06-03",
+    checkout="2026-06-06",
+    adults=2,
+)
+for hotel in result.hotels:
+    print(f"{hotel.name} — ${hotel.price_per_night}/night ({hotel.stars}★ {hotel.rating}/5)")
+```
+
+Each `Hotel` object contains: `name`, `price_per_night`, `total_price`, `currency`, `stars`, `rating`, `reviews`, `source`, and `amenities`. Results are sorted by price ascending.
+
 ## Integrations
 If you'd like, you can use integrations.
 
