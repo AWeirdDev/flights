@@ -1,12 +1,37 @@
 from typing import overload
 
 from primp import Client
+from selectolax.lexbor import LexborHTMLParser
 
 from .integrations.base import Integration
 from .parser import MetaList, parse
 from .querying import Query
 
 URL = "https://www.google.com/travel/flights"
+CONSENT_SAVE_URL = "https://consent.google.com/save"
+
+
+def _is_consent_page(html: str) -> bool:
+    return "consent.google.com/save" in html and "Before you continue" in html
+
+
+def _submit_consent(client: Client, html: str) -> None:
+    """Parse the consent page, submit the 'Reject all' form so Google sets
+    the SOCS cookie on the shared cookie jar, allowing retries to skip the wall.
+    """
+    parser = LexborHTMLParser(html)
+    reject_form = None
+    for form in parser.css("form"):
+        inputs = {i.attributes.get("name"): i.attributes.get("value", "") for i in form.css("input")}
+        # Reject-all is the form with set_eom=true and no set_sc/set_aps
+        if inputs.get("set_eom") == "true" and "set_sc" not in inputs:
+            reject_form = inputs
+            break
+
+    if reject_form is None:
+        raise RuntimeError("Could not find consent 'Reject all' form in Google consent page")
+
+    client.post(CONSENT_SAVE_URL, data=reject_form)
 
 
 @overload
@@ -90,6 +115,9 @@ def fetch_flights_html(
             params = {"q": q}
 
         res = client.get(URL, params=params)
+        if _is_consent_page(res.text):
+            _submit_consent(client, res.text)
+            res = client.get(URL, params=params)
         return res.text
 
     else:
