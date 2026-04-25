@@ -52,7 +52,18 @@ jobs:
           git add flights.db
           if git diff --staged --quiet; then
             echo "No DB changes to commit."
-          else
-            git commit -m "chore(scrape): daily price history $(date -u +%Y-%m-%d)"
-            git push origin HEAD:${{ github.ref_name }}
+            exit 0
           fi
+          git commit -m "chore(scrape): daily price history $(date -u +%Y-%m-%d)"
+          for attempt in 1 2 3; do
+            git fetch origin "${{ github.ref_name }}"
+            git rebase "origin/${{ github.ref_name }}"
+            if git push origin "HEAD:${{ github.ref_name }}"; then
+              echo "Pushed on attempt $attempt."
+              exit 0
+            fi
+            echo "Push failed on attempt $attempt; retrying after rebase..."
+            sleep $((attempt * 5))
+          done
+          echo "Failed to push after 3 attempts."
+          exit 1
