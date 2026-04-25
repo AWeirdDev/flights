@@ -20,39 +20,98 @@ class MetaList(list[Flights]):
     metadata: JsMetadata
 
 
+import re
+
 def parse(html: str) -> MetaList:
+    # Try multiple ways to find the data
+    
+    # 1. Classic script tag with ID or class
     parser = LexborHTMLParser(html)
+    for selector in [r"script.ds\:1", r"script#ds\:1", r"script[data-id='ds:1']"]:
+        script = parser.css_first(selector)
+        if script and "data:" in script.text():
+            try:
+                return parse_js(script.text())
+            except:
+                continue
 
-    # find js
-    script = parser.css_first(r"script.ds\:1")
-    return parse_js(script.text())
+    # 2. AF_initDataCallback style
+    match = re.search(r"AF_initDataCallback\(\{key:\s*'ds:1'.*?data:(.*?)\}\);</script>", html, re.DOTALL)
+    if not match:
+        # Try without the script tag end
+        match = re.search(r"AF_initDataCallback\(\{key:\s*'ds:1'.*?data:(.*?)\}\);", html, re.DOTALL)
+        
+    if match:
+        data = match.group(1).strip()
+        return parse_payload(data)
 
+    # 3. WIZ style (wiz_jd)
+    match = re.search(r"window\['_wjdc'\]\(.*?'ds:1':\s*JSON\.parse\('(.*?)'\)", html, re.DOTALL)
+    if match:
+        data = match.group(1).encode().decode('unicode_escape')
+        return parse_payload(data)
 
-# Data discovery by @kftang, huge shout out!
+    # Check for consent page or other common issues
+    if "consent.google.com" in html or "Before you continue" in html:
+        raise RuntimeError("Google Consent Page detected. Scraper blocked.")
+    
+    raise RuntimeError("Could not find flight data in Google Flights response.")
+
 def parse_js(js: str):
     data = js.split("data:", 1)[1].rsplit(",", 1)[0]
-    print(data)
+    return parse_payload(data)
 
-    payload = json.loads(data)
+def parse_payload(data: str):
+    data = data.strip()
+    if data.startswith("'") or data.startswith('"'):
+        # It's a string, likely from WIZ style
+        try:
+            data = json.loads(data)
+        except:
+            # Maybe it's just quoted but not a JSON string
+            if data[0] == data[-1] and data[0] in ("'", '"'):
+                data = data[1:-1]
+    
+    # If it's still a string, it might have trailing junk like ", sideChannel: {}"
+    # We expect a JSON array or object
+    if data.startswith('['):
+        last_bracket = data.rfind(']')
+        if last_bracket != -1:
+            data = data[:last_bracket+1]
+    elif data.startswith('{'):
+        last_bracket = data.rfind('}')
+        if last_bracket != -1:
+            data = data[:last_bracket+1]
+
+    try:
+        payload = json.loads(data)
+    except json.JSONDecodeError:
+        # One last attempt: maybe it's a JS-style object that needs some cleaning
+        # but usually Google's data is strict JSON inside the callback
+        raise
 
     alliances = []
     airlines = []
 
-    (alliances_data, airlines_data) = (
-        payload[7][1][0],
-        payload[7][1][1],
-    )
+    try:
+        (alliances_data, airlines_data) = (
+            payload[7][1][0],
+            payload[7][1][1],
+        )
 
-    for code, name in alliances_data:
-        alliances.append(Alliance(code=code, name=name))
+        for code, name in alliances_data:
+            alliances.append(Alliance(code=code, name=name))
 
-    for code, name in airlines_data:
-        airlines.append(Airline(code=code, name=name))
+        for code, name in airlines_data:
+            airlines.append(Airline(code=code, name=name))
+    except (IndexError, TypeError):
+        # Metadata missing or different format, skip it
+        pass
 
     meta = JsMetadata(alliances=alliances, airlines=airlines)
 
     flights = MetaList()
-    if payload[3][0] is None:
+    if len(payload) <= 3 or payload[3] is None or payload[3][0] is None:
         return flights
 
     for k in payload[3][0]:

@@ -1,0 +1,58 @@
+name: Daily Flight Scrape
+
+on:
+  schedule:
+    # 07:00 UTC every day. Tweak as needed.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      horizon:
+        description: "Number of weekends to scrape"
+        required: false
+        default: "26"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scrape-flights
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run scraper
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BRIGHT_DATA_API_KEY: ${{ secrets.BRIGHT_DATA_API_KEY }}
+          SCRAPE_HORIZON_WEEKENDS: ${{ github.event.inputs.horizon || '26' }}
+          FLIGHT_DB_PATH: flights.db
+        run: |
+          python -m weekend_scraper.main scrape-once --horizon "$SCRAPE_HORIZON_WEEKENDS"
+
+      - name: Commit updated price history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flights.db
+          if git diff --staged --quiet; then
+            echo "No DB changes to commit."
+          else
+            git commit -m "chore(scrape): daily price history $(date -u +%Y-%m-%d)"
+            git push origin HEAD:${{ github.ref_name }}
+          fi

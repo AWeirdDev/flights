@@ -89,7 +89,14 @@ def fetch_flights_html(
         else:
             params = {"q": q}
 
-        res = client.get(URL, params=params)
+        res = client.get(
+            URL, 
+            params=params, 
+            cookies={
+                "CONSENT": "YES+cb.20230531-04-p0.en-GB+FX+908",
+                "SOCS": "CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg"
+            }
+        )
         return res.text
 
     else:
