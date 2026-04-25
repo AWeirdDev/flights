@@ -40,7 +40,6 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          BRIGHT_DATA_API_KEY: ${{ secrets.BRIGHT_DATA_API_KEY }}
           SCRAPE_HORIZON_WEEKENDS: ${{ github.event.inputs.horizon || '26' }}
           FLIGHT_DB_PATH: flights.db
         run: |
