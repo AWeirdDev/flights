@@ -18,6 +18,7 @@ class Alliance:
 class JsMetadata:
     airlines: list[Airline]
     alliances: list[Alliance]
+    diagnostics: dict[str, object] | None = None
 
 
 @dataclass

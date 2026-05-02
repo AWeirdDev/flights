@@ -2,6 +2,7 @@ from typing import overload
 
 from primp import Client
 
+from .fetch_result import FetchResult
 from .integrations.base import Integration
 from .parser import MetaList, parse
 from .querying import Query
@@ -57,8 +58,25 @@ def get_flights(
         q: The query.
         proxy (str, optional): Proxy.
     """
-    html = fetch_flights_html(q, proxy=proxy, integration=integration)
-    return parse(html)
+    fetched = fetch_flights_html(q, proxy=proxy, integration=integration)
+    flights = parse(fetched)
+    if integration is not None or flights or _status(flights) == "ok":
+        return flights
+
+    if not _should_try_browser(flights):
+        return flights
+
+    try:
+        from .integrations import Playwright
+
+        browser_fetched = fetch_flights_html(q, proxy=proxy, integration=Playwright())
+        browser_flights = parse(browser_fetched)
+        if browser_flights or _status(browser_flights) != "no_parseable_xhr":
+            return browser_flights
+    except Exception:
+        return flights
+
+    return flights
 
 
 def fetch_flights_html(
@@ -67,7 +85,7 @@ def fetch_flights_html(
     *,
     proxy: str | None = None,
     integration: Integration | None = None,
-) -> str:
+) -> str | FetchResult:
     """Fetch flights and get the **HTML**.
 
     Args:
@@ -94,3 +112,25 @@ def fetch_flights_html(
 
     else:
         return integration.fetch_html(q)
+
+
+def _status(flights: MetaList) -> str | None:
+    diagnostics = getattr(flights, "diagnostics", None)
+    if isinstance(diagnostics, dict):
+        status = diagnostics.get("status")
+        return str(status) if status is not None else None
+    meta_diagnostics = getattr(getattr(flights, "metadata", None), "diagnostics", None)
+    if isinstance(meta_diagnostics, dict):
+        status = meta_diagnostics.get("status")
+        return str(status) if status is not None else None
+    return None
+
+
+def _should_try_browser(flights: MetaList) -> bool:
+    return _status(flights) in {
+        "missing_script_ds1",
+        "malformed_script_data",
+        "google_error_response",
+        "empty_flight_payload",
+        "malformed_flight_payload",
+    }
