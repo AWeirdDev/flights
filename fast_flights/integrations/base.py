@@ -1,6 +1,7 @@
 import os
 from abc import ABC
 
+from ..fetch_result import FetchResult
 from ..querying import Query
 
 try:
@@ -15,7 +16,7 @@ except ModuleNotFoundError:
 class Integration(ABC):
     """Represents an integration."""
 
-    def fetch_html(self, q: Query | str, /) -> str:
+    def fetch_html(self, q: Query | str, /) -> str | FetchResult:
         """Fetch the flights page HTML from a query.
 
         Args:

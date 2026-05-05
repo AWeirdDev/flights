@@ -2,6 +2,7 @@ from typing import overload
 
 from primp import Client
 
+from .fetch_result import FetchResult
 from .integrations.base import Integration
 from .parser import MetaList, parse
 from .querying import Query
@@ -57,8 +58,8 @@ def get_flights(
         q: The query.
         proxy (str, optional): Proxy.
     """
-    html = fetch_flights_html(q, proxy=proxy, integration=integration)
-    return parse(html)
+    fetched = fetch_flights_html(q, proxy=proxy, integration=integration)
+    return parse(fetched)
 
 
 def fetch_flights_html(
@@ -67,7 +68,7 @@ def fetch_flights_html(
     *,
     proxy: str | None = None,
     integration: Integration | None = None,
-) -> str:
+) -> str | FetchResult:
     """Fetch flights and get the **HTML**.
 
     Args:
