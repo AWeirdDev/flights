@@ -83,6 +83,11 @@ def fetch_flights_html(
             cookie_store=True,
         )
 
+        # Pre-set the SOCS cookie to bypass Google's cookie consent page.
+        # Without this, Google returns a "Before you continue" consent wall
+        # instead of flight results, causing all searches to fail.
+        client.set_cookies(URL, {"SOCS": "CAISNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMwODE1LjA3X3AxGgJlbiACGgYIgJnPpwY"})
+
         if isinstance(q, Query):
             params = q.params()
 
