@@ -31,7 +31,6 @@ def parse(html: str) -> MetaList:
 # Data discovery by @kftang, huge shout out!
 def parse_js(js: str):
     data = js.split("data:", 1)[1].rsplit(",", 1)[0]
-    print(data)
 
     payload = json.loads(data)
 
