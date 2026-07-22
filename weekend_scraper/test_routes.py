@@ -2,16 +2,15 @@ from weekend_scraper.routes import get_routes, Route
 
 def test_get_routes():
     routes = get_routes()
-    assert len(routes) == 10
+    assert len(routes) == 18
     assert routes[0] == Route(from_airport="BHD", to_airport="LHR")
-    assert routes[-1] == Route(from_airport="BFS", to_airport="LCY")
-    
-    # Check all expected pairs exist
+    assert routes[-1] == Route(from_airport="BFS", to_airport="AGP")
+
     origins = {"BHD", "BFS"}
-    destinations = {"LHR", "LGW", "STN", "LTN", "LCY"}
-    
+    destinations = {"LHR", "LGW", "STN", "LTN", "LCY", "CDG", "BCN", "AMS", "AGP"}
+
     actual_pairs = {(r.from_airport, r.to_airport) for r in routes}
-    assert len(actual_pairs) == 10
+    assert len(actual_pairs) == 18
     for origin in origins:
         for dest in destinations:
             assert (origin, dest) in actual_pairs

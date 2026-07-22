@@ -7,16 +7,17 @@ class Route:
 
 def get_routes() -> list[Route]:
     """
-    Returns the 10 origin/destination pairs for Belfast ↔ London.
     Origins: BHD, BFS
-    Destinations: LHR, LGW, STN, LTN, LCY
+    Destinations:
+      London — LHR, LGW, STN, LTN, LCY
+      Europe — CDG (Paris), BCN (Barcelona), AMS (Amsterdam), AGP (Malaga)
+    Non-existent/seasonal pairs are handled by the scraper returning None.
     """
     origins = ["BHD", "BFS"]
-    destinations = ["LHR", "LGW", "STN", "LTN", "LCY"]
-    
-    routes = []
-    for origin in origins:
-        for destination in destinations:
-            routes.append(Route(from_airport=origin, to_airport=destination))
-            
-    return routes
+    destinations = ["LHR", "LGW", "STN", "LTN", "LCY", "CDG", "BCN", "AMS", "AGP"]
+
+    return [
+        Route(from_airport=origin, to_airport=destination)
+        for origin in origins
+        for destination in destinations
+    ]
