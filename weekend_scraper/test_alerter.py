@@ -42,6 +42,26 @@ def test_get_alerts_relative():
     assert "absolute" in rules
     assert "drop_20" in rules
 
+def test_get_alerts_absolute_european_threshold():
+    sample = PriceSample(
+        scraped_at=datetime.now(timezone.utc),
+        out_date="2026-06-05", ret_date="2026-06-07",
+        from_airport="BFS", to_airport="BCN",
+        price_gbp=12900, out_depart_hhmm="18:00", ret_depart_hhmm="19:00",
+        airlines=["VY"]
+    )
+    alerts = get_alerts(sample, [])
+    assert len(alerts) == 1
+    assert alerts[0].rule == "absolute"
+
+    sample.price_gbp = 13000
+    assert get_alerts(sample, []) == []
+
+    for eu in ("CDG", "AMS", "AGP"):
+        sample.to_airport = eu
+        sample.price_gbp = 12500
+        assert any(a.rule == "absolute" for a in get_alerts(sample, []))
+
 def test_get_alerts_no_history():
     history = [8000, 8200, 8500, 7900] # only 4 samples
     sample = PriceSample(

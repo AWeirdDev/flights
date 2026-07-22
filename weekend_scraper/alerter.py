@@ -22,10 +22,17 @@ def get_alerts(sample: PriceSample, history: List[int]) -> List[Alert]:
     """
     alerts = []
     
-    # Priority Thresholds
-    # Heathrow and Gatwick are prioritized with a higher alert threshold (£100)
-    is_priority = sample.to_airport in ("LHR", "LGW")
-    threshold = 10000 if is_priority else 7000
+    # Absolute alert thresholds (pennies), tiered by destination band:
+    #   European weekend break destinations — £130
+    #   London Heathrow / Gatwick             — £100
+    #   Everything else (STN / LTN / LCY)     — £70
+    european = {"CDG", "BCN", "AMS", "AGP"}
+    if sample.to_airport in european:
+        threshold = 13000
+    elif sample.to_airport in ("LHR", "LGW"):
+        threshold = 10000
+    else:
+        threshold = 7000
 
     # Rule 1: Absolute cap
     if sample.price_gbp < threshold:
