@@ -2,6 +2,7 @@ import os
 import time
 import random
 import argparse
+import traceback
 from datetime import date
 from typing import Optional
 
@@ -38,26 +39,25 @@ def main():
     for friday, sunday in weekends:
         for route in routes:
             print(f"Scraping {route.from_airport} ↔ {route.to_airport} for {friday} - {sunday}...")
-            
-            # 1. Scrape
-            sample = scrape_weekend_route(friday, sunday, route, integration=integration)
-            
-            if sample:
-                print(f"  [FOUND] {sample.from_airport}→{sample.to_airport} at £{sample.price_gbp/100}")
-                # 2. Get history
-                history = store.get_history(sample.out_date, sample.ret_date, sample.from_airport, sample.to_airport)
-                
-                # 3. Save sample
-                store.save_sample(sample)
-                
-                # 4. Alert if not backfill
-                if args.command == "scrape-once":
-                    alerts = get_alerts(sample, history)
-                    for alert in alerts:
-                        if not store.was_alert_sent(alert.dedup_key):
-                            all_alerts.append(alert)
-                            store.record_alert(sample.id, alert.rule, alert.dedup_key)
-            
+
+            try:
+                sample = scrape_weekend_route(friday, sunday, route, integration=integration)
+
+                if sample:
+                    print(f"  [FOUND] {sample.from_airport}→{sample.to_airport} at £{sample.price_gbp/100}")
+                    history = store.get_history(sample.out_date, sample.ret_date, sample.from_airport, sample.to_airport)
+                    store.save_sample(sample)
+
+                    if args.command == "scrape-once":
+                        alerts = get_alerts(sample, history)
+                        for alert in alerts:
+                            if not store.was_alert_sent(alert.dedup_key):
+                                all_alerts.append(alert)
+                                store.record_alert(sample.id, alert.rule, alert.dedup_key)
+            except Exception as e:
+                print(f"  [SKIPPED] {route.from_airport}→{route.to_airport} {friday}: {type(e).__name__}: {e}")
+                traceback.print_exc()
+
             # Be polite to Google
             time.sleep(random.uniform(1.0, 3.0))
             
