@@ -49,15 +49,21 @@ def scrape_weekend_route(
         out_time = out_f.flights[0].departure.time
         out_hour = out_time[0]
         out_min = out_time[1] if len(out_time) > 1 else 0
-        
+
+        # Skip flights fast_flights couldn't parse a departure time for.
+        if out_hour is None: continue
         if out_hour < 17: continue # YOUR RULE: After 5pm
 
         for ret_f in ret_options:
             ret_time = ret_f.flights[0].departure.time
             ret_hour = ret_time[0]
             ret_min = ret_time[1] if len(ret_time) > 1 else 0
-            
+
+            if ret_hour is None: continue
             if ret_hour < 17: continue # YOUR RULE: After 5pm
+
+            if out_min is None: out_min = 0
+            if ret_min is None: ret_min = 0
             
             total_pennies = int((out_f.price + ret_f.price) * 100)
             
