@@ -57,6 +57,47 @@ query = create_query(
 res = get_flights(query)
 ```
 
+## Search filters
+
+`FlightQuery` supports filters for each flight leg:
+
+```python
+flight = FlightQuery(
+    date="YYYY-MM-DD",
+    from_airport="MYJ",
+    to_airport="TPE",
+    max_stops=1,
+    airlines=["JL", "ONEWORLD"],
+    earliest_departure_hour=7,
+    latest_departure_hour=18,
+    earliest_arrival_hour=10,
+    latest_arrival_hour=23,
+    max_duration_minutes=720,
+    connecting_airports=["HND", "NRT"],
+    min_layover_minutes=60,
+    max_layover_minutes=240,
+    less_emissions_only=True,
+)
+```
+
+Filters for the whole search are passed to `create_query`:
+
+```python
+query = create_query(
+    flights=[flight],
+    currency="USD",
+    max_price=1500,
+    carry_on_bags=1,
+    checked_bags=1,
+    hide_separate_and_self_transfer=True,
+    exclude_basic_economy=True,
+)
+```
+
+Hours use local airport time on a 0–23 clock. Duration and layover values use
+minutes, and `max_price` uses the selected `currency`. Google currently applies
+the first leg's airline filter to the whole search.
+
 ## Integrations
 If you'd like, you can use integrations.
 
