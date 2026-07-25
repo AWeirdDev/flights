@@ -39,7 +39,7 @@ get_flights(
 
 
 ## FlightQuery
-This specifies the general flight data: the date, departure & arrival airport, and the maximum number of stops (untested).
+This specifies the flight leg and its per-leg filters:
 
 ```python
 data = FlightQuery(
@@ -47,13 +47,39 @@ data = FlightQuery(
     from_airport="TPE", 
     to_airport="MYJ", 
     airlines=["DL", "AA", "STAR_ALLIANCE"], # optional
-    max_stops=10  # optional
+    max_stops=1,                         # optional
+    earliest_departure_hour=7,           # 7:00 AM
+    latest_departure_hour=18,            # before 6:00 PM
+    earliest_arrival_hour=10,
+    latest_arrival_hour=23,
+    max_duration_minutes=720,
+    connecting_airports=["HND", "NRT"],
+    min_layover_minutes=60,
+    max_layover_minutes=240,
+    less_emissions_only=True,
 )
 ```
 
 Note that for `round-trip` trips, you'll need to specify more than one `FlightQuery` object for the `flight_data` parameter.
 
 The values in `airlines` has to be a valid 2 letter IATA airline code, case insensitive. They can also be one of `SKYTEAM`, `STAR_ALLIANCE` or `ONEWORLD`. Note that the server side currently ignores the `airlines` parameter added to the `FlightQuery`s of all the flights which is not the first flight. In other words, if you have two `FlightQuery`s for a `round-trip` trip: JFK-MIA and MIA-JFK, and you add `airlines` parameter to both `FlightQuery`s, only the first `airlines` will be considered for the whole search. So technically `airlines` could be a better fit as a parameter for `TFSData` but adding to `FlightQuery` is the correct usage because if the backend changes and brings more flexibility to filter with different airlines for different flight segments in the future, which it should, this will come in handy.
+
+`create_query()` also supports filters that apply to the whole search:
+
+```python
+query = create_query(
+    flights=[data],
+    currency="USD",
+    max_price=1500,
+    carry_on_bags=1,
+    checked_bags=1,
+    hide_separate_and_self_transfer=True,
+    exclude_basic_economy=True,
+)
+```
+
+`max_price` uses the currency selected by `currency`. Baggage counts ask Google
+to include its estimated bag fees in displayed prices.
 
 ## Trip
 Either one of:

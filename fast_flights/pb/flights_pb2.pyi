@@ -38,6 +38,10 @@ class Passenger(int, Enum):
     INFANT_IN_SEAT = 3
     INFANT_ON_LAP = 4
 
+class Emissions(int, Enum):
+    # UNKNOWN_EMISSIONS = 0
+    LESS_EMISSIONS = 1
+
 class Airport(__Composite):
     airport: str
 
@@ -47,9 +51,26 @@ class FlightData(__Composite):
     to_airport: Airport
     max_stops: int | None
     airlines: __RepeatedScalarContainer[str] | list[str]
+    earliest_departure_hour: int | None
+    latest_departure_hour: int | None
+    earliest_arrival_hour: int | None
+    latest_arrival_hour: int | None
+    max_duration_minutes: int | None
+    connecting_airports: __RepeatedScalarContainer[str] | list[str]
+    min_layover_minutes: int | None
+    max_layover_minutes: int | None
+    emissions: __RepeatedScalarContainer[Emissions] | list[Emissions]
+
+class Baggage(__Composite):
+    carry_on_bags: int | None
+    checked_bags: int | None
 
 class Info(__Composite):
     data: __RepeatedCompositeContainer[FlightData] | list[FlightData]
     seat: Seat
     passengers: __RepeatedCompositeContainer[Passenger] | list[Passenger]
+    max_price: int | None
+    baggage: Baggage
+    hide_separate_and_self_transfer: bool | None
     trip: Trip
+    exclude_basic_economy: bool | None

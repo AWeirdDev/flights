@@ -6,7 +6,16 @@ from typing import Literal
 
 from typing_extensions import override
 
-from .pb.flights_pb2 import Airport, FlightData, Info, Passenger, Seat, Trip
+from .pb.flights_pb2 import (
+    Airport,
+    Baggage,
+    Emissions,
+    FlightData,
+    Info,
+    Passenger,
+    Seat,
+    Trip,
+)
 from .types import Currency, Language, SeatType, TripType
 
 
@@ -23,15 +32,33 @@ class Query:
     passengers: list[Passenger]
     language: str
     currency: str
+    max_price: int | None = None
+    carry_on_bags: int = 0
+    checked_bags: int = 0
+    hide_separate_and_self_transfer: bool = False
+    exclude_basic_economy: bool = False
 
     def pb(self) -> Info:
         """(internal) Protobuf data. (`Info`)"""
-        return Info(
+        info = Info(
             data=self.flight_data,
             seat=self.seat,
             trip=self.trip,
             passengers=self.passengers,
+            max_price=self.max_price,
         )
+        if self.carry_on_bags or self.checked_bags:
+            info.baggage.CopyFrom(
+                Baggage(
+                    carry_on_bags=self.carry_on_bags,
+                    checked_bags=self.checked_bags,
+                )
+            )
+        if self.hide_separate_and_self_transfer:
+            info.hide_separate_and_self_transfer = True
+        if self.exclude_basic_economy:
+            info.exclude_basic_economy = True
+        return info
 
     def to_bytes(self) -> bytes:
         """Convert this query to bytes."""
@@ -85,6 +112,15 @@ class FlightQuery:
     to_airport: str
     max_stops: int | None = None
     airlines: list[str] | None = None
+    earliest_departure_hour: int | None = None
+    latest_departure_hour: int | None = None
+    earliest_arrival_hour: int | None = None
+    latest_arrival_hour: int | None = None
+    max_duration_minutes: int | None = None
+    connecting_airports: list[str] | None = None
+    min_layover_minutes: int | None = None
+    max_layover_minutes: int | None = None
+    less_emissions_only: bool = False
 
     def pb(self) -> FlightData:
         if isinstance(self.date, str):
@@ -98,6 +134,17 @@ class FlightQuery:
             to_airport=Airport(airport=self.to_airport),
             max_stops=self.max_stops,
             airlines=self.airlines,
+            earliest_departure_hour=self.earliest_departure_hour,
+            latest_departure_hour=self.latest_departure_hour,
+            earliest_arrival_hour=self.earliest_arrival_hour,
+            latest_arrival_hour=self.latest_arrival_hour,
+            max_duration_minutes=self.max_duration_minutes,
+            connecting_airports=self.connecting_airports,
+            min_layover_minutes=self.min_layover_minutes,
+            max_layover_minutes=self.max_layover_minutes,
+            emissions=(
+                [Emissions.LESS_EMISSIONS] if self.less_emissions_only else []
+            ),
         )
 
     def with_max_stops(self, m: int | None = None) -> "FlightQuery":
@@ -162,6 +209,11 @@ def create_query(
     language: str | Literal[""] | Language = "",
     currency: str | Literal[""] | Currency = "",
     max_stops: int | None = None,
+    max_price: int | None = None,
+    carry_on_bags: int = 0,
+    checked_bags: int = 0,
+    hide_separate_and_self_transfer: bool = False,
+    exclude_basic_economy: bool = False,
 ) -> Query:
     """Create a query.
 
@@ -173,6 +225,12 @@ def create_query(
         language: Set the language. Use `""` (blank str) to let Google decide.
         currency: Set the currency. Use `""` (blank str) to let Google decide.
         max_stops (optional): Set the maximum stops for every flight query, if present.
+        max_price: Maximum price in the selected currency.
+        carry_on_bags: Carry-on bags whose estimated fees should be included.
+        checked_bags: Checked bags whose estimated fees should be included.
+        hide_separate_and_self_transfer: Hide separate-ticket and self-transfer
+            itineraries.
+        exclude_basic_economy: Exclude basic economy fares.
     """
     return Query(
         flight_data=[flight.with_max_stops(max_stops).pb() for flight in flights],
@@ -181,4 +239,9 @@ def create_query(
         passengers=(passengers or Passengers(adults=1)).pb(),
         language=language,
         currency=currency,
+        max_price=max_price,
+        carry_on_bags=carry_on_bags,
+        checked_bags=checked_bags,
+        hide_separate_and_self_transfer=hide_separate_and_self_transfer,
+        exclude_basic_economy=exclude_basic_economy,
     )
