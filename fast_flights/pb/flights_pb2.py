@@ -12,9 +12,9 @@ from google.protobuf.internal import builder as _builder
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC,
     6,
-    32,
+    31,
     0,
-    '-rc2',
+    '',
     'flights.proto'
 )
 # @@protoc_insertion_point(imports)

@@ -143,9 +143,7 @@ class FlightQuery:
             connecting_airports=self.connecting_airports,
             min_layover_minutes=self.min_layover_minutes,
             max_layover_minutes=self.max_layover_minutes,
-            emissions=(
-                [Emissions.LESS_EMISSIONS] if self.less_emissions_only else []
-            ),
+            emissions=([Emissions.LESS_EMISSIONS] if self.less_emissions_only else []),
         )
 
     def with_max_stops(self, m: int | None = None) -> "FlightQuery":
