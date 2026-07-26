@@ -40,25 +40,26 @@ class Query:
 
     def pb(self) -> Info:
         """(internal) Protobuf data. (`Info`)"""
-        info = Info(
+        baggage = (
+            Baggage(
+                carry_on_bags=self.carry_on_bags,
+                checked_bags=self.checked_bags,
+            )
+            if self.carry_on_bags or self.checked_bags
+            else None
+        )
+        return Info(
             data=self.flight_data,
             seat=self.seat,
             trip=self.trip,
             passengers=self.passengers,
             max_price=self.max_price,
+            baggage=baggage,
+            hide_separate_and_self_transfer=(
+                True if self.hide_separate_and_self_transfer else None
+            ),
+            exclude_basic_economy=True if self.exclude_basic_economy else None,
         )
-        if self.carry_on_bags or self.checked_bags:
-            info.baggage.CopyFrom(
-                Baggage(
-                    carry_on_bags=self.carry_on_bags,
-                    checked_bags=self.checked_bags,
-                )
-            )
-        if self.hide_separate_and_self_transfer:
-            info.hide_separate_and_self_transfer = True
-        if self.exclude_basic_economy:
-            info.exclude_basic_economy = True
-        return info
 
     def to_bytes(self) -> bytes:
         """Convert this query to bytes."""
