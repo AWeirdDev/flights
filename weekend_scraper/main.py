@@ -11,7 +11,7 @@ from .routes import get_routes
 from .scraper import scrape_weekend_route
 from .store import FlightStore
 from .alerter import get_alerts
-from .telegram import format_telegram_message, send_telegram_alert
+from .telegram import format_segment_messages, send_telegram_alerts
 from fast_flights.integrations.bright_data import BrightData
 
 def main():
@@ -49,11 +49,8 @@ def main():
                     store.save_sample(sample)
 
                     if args.command == "scrape-once":
-                        alerts = get_alerts(sample, history)
-                        for alert in alerts:
-                            if not store.was_alert_sent(alert.dedup_key):
-                                all_alerts.append(alert)
-                                store.record_alert(sample.id, alert.rule, alert.dedup_key)
+                        # Show all currently-qualifying deals each run (no dedup gate).
+                        all_alerts.extend(get_alerts(sample, history))
             except Exception as e:
                 print(f"  [SKIPPED] {route.from_airport}→{route.to_airport} {friday}: {type(e).__name__}: {e}")
                 traceback.print_exc()
@@ -61,19 +58,19 @@ def main():
             # Be polite to Google
             time.sleep(random.uniform(1.0, 3.0))
             
-    if all_alerts:
-        message = format_telegram_message(all_alerts)
+    if args.command == "scrape-once":
+        messages = format_segment_messages(all_alerts)
         token = os.getenv("TELEGRAM_BOT_TOKEN")
         chat_id = os.getenv("TELEGRAM_CHAT_ID")
-        
+
         if token and chat_id:
-            print(f"Sending {len(all_alerts)} alerts to Telegram...")
-            send_telegram_alert(token, chat_id, message)
+            print(f"Sending {len(messages)} segment messages to Telegram ({len(all_alerts)} deals)...")
+            send_telegram_alerts(token, chat_id, messages)
         else:
-            print("Telegram credentials missing, printing message instead:")
-            print(message)
-    else:
-        print("No new alerts.")
+            print("Telegram credentials missing, printing messages instead:")
+            for message in messages:
+                print(message)
+                print("---")
 
 if __name__ == "__main__":
     main()
