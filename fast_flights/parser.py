@@ -31,6 +31,18 @@ def parse(html: str) -> ResultList:
     return parse_js(script.text())
 
 
+def _parse_time(value: list[int | None] | None) -> tuple[int, int]:
+    """Expand a JS time pair that omits default (zero) components.
+
+    Google drops trailing zero components and uses ``None`` for a leading
+    zero, so ``[8]`` means 08:00 and ``[None, 31]`` means 00:31.
+    """
+    # A missing element and an explicit None both mean "omitted component",
+    # and an omitted component is always zero.
+    padded = [*(value or []), None, None]
+    return (padded[0] or 0, padded[1] or 0)
+
+
 # Data discovery by @kftang, huge shout out!
 def parse_js(js: str):
     data = js.split("data:", 1)[1].rsplit(",", 1)[0]
@@ -73,12 +85,12 @@ def parse_js(js: str):
         for single_flight in flight[2]:
             from_airport = Airport(code=single_flight[3], name=single_flight[4])
             to_airport = Airport(code=single_flight[6], name=single_flight[5])
-            departure_time = single_flight[8]
-            departure_date = single_flight[20]
+            departure_time = _parse_time(single_flight[8])
+            departure_date = tuple(single_flight[20])
             departure = SimpleDatetime(date=departure_date, time=departure_time)
 
-            arrival_time = single_flight[10]
-            arrival_date = single_flight[21]
+            arrival_time = _parse_time(single_flight[10])
+            arrival_date = tuple(single_flight[21])
             arrival = SimpleDatetime(date=arrival_date, time=arrival_time)
 
             plane_type = single_flight[17]
