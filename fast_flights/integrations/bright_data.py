@@ -44,13 +44,22 @@ class BrightData(FetchIntegration):
 
     @override
     def fetch_html(self, q: Query | str, /) -> str:
+        # Bright Data's /request endpoint now requires an explicit "format"
+        # field ("Request validation failed" / "\"format\" is required"
+        # otherwise). Confirmed live 2026-08-30 against a real SERP API zone:
+        # every request 400s without this, regardless of account/zone
+        # configuration. "raw" matches what this integration actually needs,
+        # since fetch_html() returns HTML text for the caller's parser to
+        # read the embedded `ds:1` script tag from.
         if isinstance(q, str):
             res = self.client.post(
-                self.api_url, json={"url": URL + "?q=" + q, "zone": self.zone}
+                self.api_url,
+                json={"url": URL + "?q=" + q, "zone": self.zone, "format": "raw"},
             )
         else:
             res = self.client.post(
-                self.api_url, json={"url": q.url(), "zone": self.zone}
+                self.api_url,
+                json={"url": q.url(), "zone": self.zone, "format": "raw"},
             )
 
         return res.text
