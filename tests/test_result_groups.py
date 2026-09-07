@@ -1,3 +1,4 @@
+# [AI CONTENT]
 """Synthetic regression coverage; no live requests or booking tokens."""
 
 import json
@@ -51,3 +52,4 @@ class ResultGroupTests(unittest.TestCase):
         flights = parse_groups([None], [None])
         self.assertEqual(flights, [])
         self.assertEqual(flights.metadata.airlines[0].code, "TA")
+# [/AI CONTENT]
