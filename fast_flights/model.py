@@ -57,7 +57,8 @@ class CarbonEmission:
 @dataclass
 class Flights:
     type: str | Literal["multi"]
-    price: int
+    price: int | None
+    """Fare amount, or None when Google returns an unpriced itinerary."""
     airlines: list[str]
     flights: list[SingleFlight]
     carbon: CarbonEmission

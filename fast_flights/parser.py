@@ -1,6 +1,7 @@
 # pyright: reportAny=false, reportUnknownMemberType=false, reportUnknownArgumentType=false
 
 import json
+from itertools import chain
 
 from selectolax.lexbor import LexborHTMLParser
 
@@ -69,12 +70,15 @@ def parse_js(js: str):
     meta = JsMetadata(alliances=alliances, airlines=airlines)
 
     flights = ResultList()
-    if payload[3][0] is None:
-        return flights
+    flights.metadata = meta
+    # Google separates the best flights from the remaining itineraries.
+    groups = [section[0] or [] for section in payload[2:4] if section]
 
-    for k in payload[3][0]:
+    for k in chain.from_iterable(groups):
         flight = k[0]
-        price = k[1][0][1]
+        # An itinerary can be returned without an available fare.
+        fare = k[1][0] if k[1] else []
+        price = fare[1] if fare and len(fare) > 1 else None
 
         typ = flight[0]
         airlines = flight[1]
@@ -125,5 +129,4 @@ def parse_js(js: str):
             )
         )
 
-    flights.metadata = meta
     return flights
