@@ -92,6 +92,20 @@ class QueryingTests(unittest.TestCase):
         self.assertTrue(info.hide_separate_and_self_transfer)
         self.assertTrue(info.exclude_basic_economy)
 
+    def test_requests_the_complete_result_set(self) -> None:
+        query = create_query(
+            flights=[
+                FlightQuery(
+                    date="2099-01-02",
+                    from_airport="MSP",
+                    to_airport="SLC",
+                )
+            ]
+        )
+
+        self.assertEqual(query.params()["tfu"], "EgQIABABIgA")
+        self.assertIn("&tfu=EgQIABABIgA", query.url())
+
 
 if __name__ == "__main__":
     unittest.main()
