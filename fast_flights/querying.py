@@ -77,6 +77,7 @@ class Query:
         return (
             "https://www.google.com/travel/flights/search?tfs="
             + self.to_str()
+            + "&tfu=EgQIABABIgA"
             + "&hl="
             + self.language
             + "&curr="
@@ -85,7 +86,12 @@ class Query:
 
     def params(self) -> dict[str, str]:
         """Create `params` in dictionary form."""
-        return {"tfs": self.to_str(), "hl": self.language, "curr": self.currency}
+        return {
+            "tfs": self.to_str(),
+            "hl": self.language,
+            "tfu": "EgQIABABIgA",  # show all flights and prices condition
+            "curr": self.currency,
+        }
 
     def get_trip_type(self) -> TripType:
         data = REVERSE_TRIP_LOOKUP[self.trip]
