@@ -3,13 +3,17 @@
         <img width="2560" alt="searchapi-banner" src="https://github.com/user-attachments/assets/05adb599-e875-4ed7-9498-8bc4165ce4d5" />
         <p>Made possible with support from SearchApi</p>
     </a>
+    <a href="https://www.rapidproxy.io/?ref=flights">
+        <img width="1280" height="517" alt="telegram-cloud-photo-size-5-6215057813688489838-y" src="https://github.com/user-attachments/assets/1b42dedf-b7cb-490a-aa2f-79016146edc2" />
+        <p>Made possible with support from RapidProxy</p>
+    </a>
 </div>
 
 <br />
 
 <div align="center">
 
-# ✈️ fast-flights (v3.0)
+# ✈️ fast-flights
 
 The fast and strongly-typed Google Flights scraper (API) implemented in Python.
 Based on Base64-encoded Protobuf string.
@@ -101,20 +105,6 @@ the first leg's airline filter to the whole search.
 ## Integrations
 If you'd like, you can use integrations.
 
-### Bright Data
-Use the [BrightData](https://brightdata.com) integration to protect your IP.
-
-```python
-from fast_flights.integrations import BrightData
-
-result = get_flights(
-    ..., 
-    integration=BrightData(zone="...")
-)
-
-# ... same as normal queries
-```
-
 ### SearchApi <kbd>Sponsored</kbd>
 If you want better consistency and richer data, consider using [SearchApi](https://www.searchapi.io/google-flights-api?utm_source=github&utm_medium=sponsorship&utm_campaign=google_flights_api&utm_content=AWeirdDev_flights).
 
@@ -134,6 +124,77 @@ result.booking_options
 ...
 ```
 
+### RapidProxy <kbd>Sponsored</kbd>
+Usually, you'll need a proxy to avoid bot detection from Google. [RapidProxy](https://rapidproxy.io/?ref=flights) provides reliable residential proxy solutions with 90M+ IPs worldwide, smart IP rotation, sticky sessions, and non-expiring traffic. Ideal for web scraping, automation, and large-scale data collection. For more information, see [Setting Up RapidProxy](#setting-up-rapidproxy).
+
+<details>
+    <summary>Setting Up RapidProxy</summary>
+
+#### Setting Up RapidProxy
+RapidProxy offers two proxy types, both supporting HTTP, HTTPS, and SOCKS5, with "dynamic residential" and "static residential" types.
+
+To get started, you'll need to first log in to the [RapidProxy](https://rapidproxy.io/?ref=flights) dashboard, and choose the proxy product you need.
+
+1. Config: Pick the region, proxy type and connection mode.
+2. The dashboard gives you the connection details.
+3. Record the required fields.
+
+You'll need:
+- `HOST` - Proxy host
+- `PORT` - Port
+- `USERNAME` - Username for authentication
+- `PASSWORD` - Password for authentication
+
+The connection format is `HOST:PORT:USERNAME:PASSWORD`.
+
+Normally, you'll want to store this in a `.env` file or just the environment:
+
+```env
+RAPIDPROXY_HOST=HOST
+RAPIDPROXY_PORT=PORT
+RAPIDPROXY_USERNAME=USERNAME
+RAPIDPROXY_PASSWORD=PASSWORD
+```
+
+Since `get_flights()` supports `proxy` out of the box, you can just use it:
+
+```python
+import os
+
+PROXY_URL = (
+   f"http://{os.environ['RAPIDPROXY_USERNAME']}:"
+   f"{os.environ['RAPIDPROXY_PASSWORD']}@"
+   f"{os.environ['RAPIDPROXY_HOST']}:"
+   f"{os.environ['RAPIDPROXY_PORT']}"
+)
+
+results = get_flights(..., proxy=PROXY_URL)
+```
+
+The rest is the same, and now you have a working proxy.
+
+For more information:
+
+- Website: https://www.rapidproxy.io/
+- Getting started: https://docs.rapidproxy.io/proxies/getting-started
+- Integration guide: https://docs.rapidproxy.io/proxies/integration-guide
+- Support: support@rapidproxy.io
+
+</details>
+
+### Bright Data
+Use the [BrightData](https://brightdata.com) integration to protect your IP.
+
+```python
+from fast_flights.integrations import BrightData
+
+result = get_flights(
+    ..., 
+    integration=BrightData(zone="...")
+)
+
+# ... same as normal queries
+```
 ## Roadmap
 - [x] Use JavaScript data instead of traditional HTML parsing
 - [x] Add support for integrations
